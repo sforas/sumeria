@@ -1,24 +1,31 @@
-import { useEffect, useState } from 'react'
-import { supabase } from './lib/supabase'
+import { useState } from 'react'
+import './index.css'
+import Topbar from './components/Topbar'
+import BottomNav from './components/BottomNav'
+import Home from './pages/Home'
 
 function App() {
-  const [status, setStatus] = useState('Conectando...')
-
-  useEffect(() => {
-    async function testConnection() {
-      const { data, error } = await supabase.from('goals').select('*').limit(1)
-      if (error) {
-        setStatus('❌ Error: ' + error.message)
-      } else {
-        setStatus('✅ Supabase conectado correctamente')
-      }
-    }
-    testConnection()
-  }, [])
+  const [activeTab, setActiveTab] = useState('home')
 
   return (
-    <div style={{ background: '#0d0d0d', color: '#ededed', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'sans-serif', fontSize: '18px' }}>
-      {status}
+    <div style={{
+      background: 'var(--bg)',
+      minHeight: '100dvh',
+      display: 'flex',
+      flexDirection: 'column',
+      maxWidth: '430px',
+      margin: '0 auto'
+    }}>
+      <Topbar />
+      <div style={{ flex: 1, overflowY: 'auto' }}>
+        {activeTab === 'home' && <Home />}
+        {activeTab !== 'home' && (
+          <div style={{ padding: '20px', color: 'var(--muted)' }}>
+            Sección en construcción...
+          </div>
+        )}
+      </div>
+      <BottomNav active={activeTab} onChange={setActiveTab} />
     </div>
   )
 }
