@@ -6,6 +6,7 @@ import Home from './pages/Home'
 import Fitness from './pages/Fitness'
 import Work from './pages/Work'
 import Diet from './pages/Diet'
+import Reading from './pages/Reading'
 
 function App() {
   const [activeTab, setActiveTab] = useState('home')
@@ -25,7 +26,8 @@ function App() {
         {activeTab === 'fitness' && <Fitness />}
         {activeTab === 'work' && <Work />}
         {activeTab === 'diet' && <Diet />}
-        {!['home', 'fitness', 'work', 'diet'].includes(activeTab) && (
+        {activeTab === 'reading' && <Reading />}
+        {!['home', 'fitness', 'work', 'diet', 'reading'].includes(activeTab) && (
           <div style={{ padding: '20px', color: 'var(--muted)' }}>
             Sección en construcción...
           </div>
