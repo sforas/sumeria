@@ -54,17 +54,17 @@ export default function Home() {
   }
 
   async function addGoal() {
-    if (!newGoal.trim()) return
-    const { data } = await supabase.from('goals').insert({
-      text: newGoal.trim(),
-      area: newArea,
-      done: false,
-      date: today()
-    }).select().single()
-    if (data) setGoals([...goals, data])
-    setNewGoal('')
-    setShowAdd(false)
-  }
+  if (!newGoal.trim()) return
+  const { data } = await supabase.from('goals').insert({
+    text: newGoal.trim(),
+    area: newArea,
+    done: false,
+    date: today()
+  }).select().single()
+  if (data) setGoals([...goals, data])
+  setNewGoal('')
+  setShowAdd(false)
+}
 
   async function deleteGoal(id) {
     await supabase.from('goals').delete().eq('id', id)
