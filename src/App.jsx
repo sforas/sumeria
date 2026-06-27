@@ -12,6 +12,7 @@ import Social from './pages/Social'
 import Healthcare from './pages/Healthcare'
 import Savings from './pages/Savings'
 import EarnIt from './pages/EarnIt'
+import Overview from './pages/Overview'
 
 function App() {
   const [activeTab, setActiveTab] = useState('home')
@@ -37,7 +38,8 @@ function App() {
         {activeTab === 'health' && <Healthcare />}
         {activeTab === 'savings' && <Savings />}
         {activeTab === 'earnit' && <EarnIt />}
-        {!['home', 'fitness', 'work', 'diet', 'reading', 'learning', 'social', 'health', 'savings', 'earnit'].includes(activeTab) && (
+        {activeTab === 'overview' && <Overview />}
+        {!['home', 'fitness', 'work', 'diet', 'reading', 'learning', 'social', 'health', 'savings', 'earnit', 'overview'].includes(activeTab) && (
           <div style={{ padding: '20px', color: 'var(--muted)' }}>
             Sección en construcción...
           </div>
