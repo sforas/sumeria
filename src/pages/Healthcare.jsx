@@ -93,20 +93,28 @@ export default function Healthcare() {
   }
 
   async function logSleep() {
-    if (!newSleep.sleep_time || !newSleep.wake_time) return
-    const dur = calcDuration(newSleep.sleep_time, newSleep.wake_time)
-    const { data } = await supabase.from('sleep_log').insert({
-      ...newSleep,
-      duration: dur?.label || '',
-      date: today()
-    }).select().single()
-    if (data) setSleepLog([data, ...sleepLog])
-    setNewSleep({ sleep_time: '', wake_time: '' })
-    setShowLogSleep(false)
-    if (dur && dur.total >= 420) {
-      await supabase.from('xp_log').insert({ amount: 30, reason: "Good night's sleep", date: today() })
-    }
+  if (!newSleep.sleep_time || !newSleep.wake_time) return
+  const dur = calcDuration(newSleep.sleep_time, newSleep.wake_time)
+  
+  const hours = Math.floor(dur.total / 60)
+  const mins = dur.total % 60
+  const durationTime = `${String(hours).padStart(2,'0')}:${String(mins).padStart(2,'0')}:00`
+
+  const { data, error } = await supabase.from('sleep_log').insert({
+    sleep_time: newSleep.sleep_time,
+    wake_time: newSleep.wake_time,
+    duration: durationTime,
+    date: today()
+  }).select().single()
+
+  console.log('Sleep result:', data, error)
+  if (data) setSleepLog([data, ...sleepLog])
+  setNewSleep({ sleep_time: '', wake_time: '' })
+  setShowLogSleep(false)
+  if (dur && dur.total >= 420) {
+    await supabase.from('xp_log').insert({ amount: 30, reason: "Good night's sleep", date: today() })
   }
+}
 
   async function deleteSleep(id) {
     await supabase.from('sleep_log').delete().eq('id', id)
