@@ -71,18 +71,19 @@ export default function EarnIt() {
   }
 
   async function updateUsed(app) {
-    const mins = parseInt(usedInput)
-    if (isNaN(mins) || mins < 0) return
-    const { error } = await supabase
-      .from('earn_it')
-      .update({ used_min: mins })
-      .eq('id', app.id)
-    if (!error) {
-      setEarnIt(prev => prev.map(a => a.id === app.id ? { ...a, used_min: mins } : a))
-    }
-    setEditUsed(null)
-    setUsedInput('')
+  const mins = parseInt(usedInput)
+  if (isNaN(mins) || mins <= 0) return
+  const newTotal = (app.used_min || 0) + mins
+  const { error } = await supabase
+    .from('earn_it')
+    .update({ used_min: newTotal })
+    .eq('id', app.id)
+  if (!error) {
+    setEarnIt(prev => prev.map(a => a.id === app.id ? { ...a, used_min: newTotal } : a))
   }
+  setEditUsed(null)
+  setUsedInput('')
+}
 
   async function addApp() {
     if (!newApp.app_name.trim() || !newApp.limit_min) return
@@ -254,7 +255,7 @@ export default function EarnIt() {
                   autoFocus
                   type="number"
                   inputMode="numeric"
-                  placeholder="min"
+                  placeholder="mins to add"
                   value={usedInput}
                   onChange={e => setUsedInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && updateUsed(app)}
@@ -275,7 +276,7 @@ export default function EarnIt() {
               </div>
             ) : (
               <div style={{ display: 'flex', gap: '5px', flexShrink: 0 }}>
-                <button onClick={() => { setEditUsed(app.id); setUsedInput(String(app.used_min)) }} style={{
+                <button onClick={() => { setEditUsed(app.id); setUsedInput('') }} style={{
                   background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '6px',
                   color: 'var(--muted)', fontSize: '11px', padding: '5px 10px', cursor: 'pointer'
                 }}>Log</button>
