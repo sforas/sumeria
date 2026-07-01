@@ -144,26 +144,26 @@ export default function Learning() {
           <div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '7px', marginBottom: '7px' }}>
               <input
-                autoFocus
-                placeholder="Minutes studied"
-                type="number"
-                value={newSession.minutes}
-                onChange={e => setNewSession({ ...newSession, minutes: e.target.value })}
-                style={{
-                  background: 'var(--surf3)', border: '0.5px solid var(--border)',
-                  borderRadius: '7px', color: 'var(--text)', fontSize: '12px',
-                  padding: '8px 10px', outline: 'none', width: '100%'
+              placeholder="Minutes studied"
+              type="number"
+              value={newSession.minutes}
+              onChange={e => setNewSession({ ...newSession, minutes: e.target.value })}
+              style={{
+                background: 'var(--surf3)', border: '0.5px solid var(--border)',
+                borderRadius: '7px', color: 'var(--text)', fontSize: '12px',
+                padding: '8px 10px', outline: 'none', width: '100%'
                 }}
               />
               <input
-                placeholder="Current module #"
-                type="number"
-                value={newSession.module_number}
-                onChange={e => setNewSession({ ...newSession, module_number: e.target.value })}
-                style={{
-                  background: 'var(--surf3)', border: '0.5px solid var(--border)',
-                  borderRadius: '7px', color: 'var(--text)', fontSize: '12px',
-                  padding: '8px 10px', outline: 'none', width: '100%'
+              placeholder="Current module #"
+              type="number"
+              inputMode="numeric"
+              value={newSession.module_number}
+              onChange={e => setNewSession({ ...newSession, module_number: e.target.value })}
+              style={{
+                background: 'var(--surf3)', border: '0.5px solid var(--border)',
+                borderRadius: '7px', color: 'var(--text)', fontSize: '12px',
+                padding: '8px 10px', outline: 'none', width: '100%'
                 }}
               />
             </div>

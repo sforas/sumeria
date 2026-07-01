@@ -26,29 +26,36 @@ export default function EarnIt() {
   useEffect(() => { fetchData() }, [])
 
   async function fetchData() {
-    const [{ data: g }, { data: e }] = await Promise.all([
-      supabase.from('goals').select('*').eq('date', today()),
-      supabase.from('earn_it').select('*').eq('date', today())
-    ])
-    setGoals(g || [])
+  const [{ data: g }, { data: e }] = await Promise.all([
+    supabase.from('goals').select('*').eq('date', today()),
+    supabase.from('earn_it').select('*').eq('date', today())
+  ])
+  setGoals(g || [])
 
-    if (e && e.length > 0) {
-      setEarnIt(e)
-    } else {
-      const defaults = DEFAULT_APPS.map(a => ({ ...a, date: today(), used_min: 0 }))
-      const { data: inserted } = await supabase.from('earn_it').insert(defaults).select()
-      setEarnIt(inserted || defaults)
-    }
-
-    const saved = localStorage.getItem('sumeria_targets')
-    if (saved) {
-      const { wake, sleep } = JSON.parse(saved)
-      setWakeTarget(wake || '07:00')
-      setSleepTarget(sleep || '23:00')
-    }
-
-    setLoading(false)
+  if (e && e.length > 0) {
+    setEarnIt(e)
+  } else {
+    const defaults = DEFAULT_APPS.map(a => ({
+      app_name: a.name,
+      icon: a.icon,
+      limit_min: a.limit_min,
+      used_min: 0,
+      locked: false,
+      date: today()
+    }))
+    const { data: inserted } = await supabase.from('earn_it').insert(defaults).select()
+    setEarnIt(inserted || defaults)
   }
+
+  const saved = localStorage.getItem('sumeria_targets')
+  if (saved) {
+    const { wake, sleep } = JSON.parse(saved)
+    setWakeTarget(wake || '07:00')
+    setSleepTarget(sleep || '23:00')
+  }
+
+  setLoading(false)
+}
 
   async function updateUsed(app) {
     const mins = parseInt(usedInput)

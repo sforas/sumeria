@@ -45,8 +45,18 @@ export default function Savings() {
   }
 
   const totalSaved = transactions
-    .filter(t => t.type === 'saving')
-    .reduce((sum, t) => sum + (t.amount || 0), 0)
+  .filter(t => t.type === 'saving')
+  .reduce((sum, t) => sum + (t.amount || 0), 0)
+
+const totalIncome = transactions
+  .filter(t => t.type === 'income')
+  .reduce((sum, t) => sum + (t.amount || 0), 0)
+
+const totalExpenses = transactions
+  .filter(t => t.type === 'expense')
+  .reduce((sum, t) => sum + Math.abs(t.amount || 0), 0)
+
+const availableBalance = totalIncome - totalExpenses - totalSaved
 
   const thisMonth = today().slice(0, 7)
   const monthTx = transactions.filter(t => t.date?.startsWith(thisMonth))
@@ -94,31 +104,30 @@ export default function Savings() {
         </div>
       </div>
 
-      {/* Emergency fund */}
-      <div style={{
-        background: 'var(--surf)', border: '0.5px solid var(--border)',
-        borderRadius: '10px', padding: '13px 15px', marginBottom: '12px'
-      }}>
-        <div style={{ fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '4px' }}>
-          Emergency fund
-        </div>
-        <div style={{ fontSize: '26px', fontWeight: 500, color: 'var(--savings)', marginBottom: '2px' }}>
-          {formatMXN(totalSaved)}
-        </div>
-        <div style={{ fontSize: '11px', color: 'var(--muted2)', marginBottom: '6px' }}>
-          Goal: {formatMXN(emergencyGoal)}
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--muted2)', marginBottom: '4px' }}>
-          <span>Progress</span>
-          <span>{Math.round(totalSaved / emergencyGoal * 100)}%</span>
-        </div>
-        <div style={{ height: '5px', background: 'var(--surf3)', borderRadius: '2px', overflow: 'hidden' }}>
-          <div style={{
-            width: `${Math.min(totalSaved / emergencyGoal * 100, 100)}%`,
-            height: '100%', background: 'var(--savings)', borderRadius: '2px', transition: 'width .3s'
-          }} />
-        </div>
+      {/* Available balance */}
+<div style={{
+  background: 'var(--surf)', border: '0.5px solid var(--border)',
+  borderRadius: '10px', padding: '13px 15px', marginBottom: '8px'
+}}>
+  <div style={{ fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '4px' }}>
+    Available balance
+  </div>
+  <div style={{ fontSize: '28px', fontWeight: 500, color: availableBalance >= 0 ? 'var(--fit)' : 'var(--danger)', marginBottom: '2px' }}>
+    {availableBalance >= 0 ? '' : '-'}{formatMXN(availableBalance)}
+  </div>
+  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px', marginTop: '10px' }}>
+    {[
+      { label: 'Income', value: formatMXN(totalIncome), color: 'var(--fit)' },
+      { label: 'Expenses', value: formatMXN(totalExpenses), color: 'var(--diet)' },
+      { label: 'Saved', value: formatMXN(totalSaved), color: 'var(--savings)' },
+    ].map((k, i) => (
+      <div key={i} style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: '10px', color: 'var(--muted)', marginBottom: '2px' }}>{k.label}</div>
+        <div style={{ fontSize: '13px', fontWeight: 500, color: k.color }}>{k.value}</div>
       </div>
+    ))}
+  </div>
+</div>
 
       {/* MONTH VIEW */}
       {view === 'month' && (
