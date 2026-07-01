@@ -6,17 +6,29 @@ function today() {
 }
 
 const DEFAULT_APPS = [
-  { name: 'Instagram', icon: '📱', color: '#E1306C', limit_min: 45 },
-  { name: 'Netflix / Series', icon: '🎬', color: '#E50914', limit_min: 90 },
-  { name: 'Gaming', icon: '🎮', color: '#00C853', limit_min: 60 },
+  { app_name: 'Instagram', limit_min: 45 },
+  { app_name: 'Netflix / Series', limit_min: 90 },
+  { app_name: 'Gaming', limit_min: 60 },
 ]
+
+function appIcon(name) {
+  if (!name) return '📱'
+  const n = name.toLowerCase()
+  if (n.includes('instagram')) return '📸'
+  if (n.includes('netflix') || n.includes('series')) return '🎬'
+  if (n.includes('gaming') || n.includes('game')) return '🎮'
+  if (n.includes('youtube')) return '▶️'
+  if (n.includes('twitter') || n.includes('x')) return '🐦'
+  if (n.includes('tiktok')) return '🎵'
+  return '📱'
+}
 
 export default function EarnIt() {
   const [goals, setGoals] = useState([])
   const [earnIt, setEarnIt] = useState([])
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
-  const [newApp, setNewApp] = useState({ app_name: '', limit_min: '', used_min: 0, locked: false })
+  const [newApp, setNewApp] = useState({ app_name: '', limit_min: '' })
   const [editUsed, setEditUsed] = useState(null)
   const [usedInput, setUsedInput] = useState('')
   const [wakeTarget, setWakeTarget] = useState('07:00')
@@ -26,42 +38,48 @@ export default function EarnIt() {
   useEffect(() => { fetchData() }, [])
 
   async function fetchData() {
-  const [{ data: g }, { data: e }] = await Promise.all([
-    supabase.from('goals').select('*').eq('date', today()),
-    supabase.from('earn_it').select('*').eq('date', today())
-  ])
-  setGoals(g || [])
+    const [{ data: g }, { data: e }] = await Promise.all([
+      supabase.from('goals').select('*').eq('date', today()),
+      supabase.from('earn_it').select('*').eq('date', today())
+    ])
+    setGoals(g || [])
 
-  if (e && e.length > 0) {
-    setEarnIt(e)
-  } else {
-    const defaults = DEFAULT_APPS.map(a => ({
-      app_name: a.name,
-      icon: a.icon,
-      limit_min: a.limit_min,
-      used_min: 0,
-      locked: false,
-      date: today()
-    }))
-    const { data: inserted } = await supabase.from('earn_it').insert(defaults).select()
-    setEarnIt(inserted || defaults)
+    if (e && e.length > 0) {
+      setEarnIt(e)
+    } else {
+      const defaults = DEFAULT_APPS.map(a => ({
+        app_name: a.app_name,
+        limit_min: a.limit_min,
+        used_min: 0,
+        locked: false,
+        date: today()
+      }))
+      const { data: inserted } = await supabase.from('earn_it').insert(defaults).select()
+      setEarnIt(inserted || [])
+    }
+
+    const saved = localStorage.getItem('sumeria_targets')
+    if (saved) {
+      try {
+        const { wake, sleep } = JSON.parse(saved)
+        setWakeTarget(wake || '07:00')
+        setSleepTarget(sleep || '23:00')
+      } catch {}
+    }
+
+    setLoading(false)
   }
-
-  const saved = localStorage.getItem('sumeria_targets')
-  if (saved) {
-    const { wake, sleep } = JSON.parse(saved)
-    setWakeTarget(wake || '07:00')
-    setSleepTarget(sleep || '23:00')
-  }
-
-  setLoading(false)
-}
 
   async function updateUsed(app) {
     const mins = parseInt(usedInput)
     if (isNaN(mins) || mins < 0) return
-    await supabase.from('earn_it').update({ used_min: mins }).eq('id', app.id)
-    setEarnIt(earnIt.map(a => a.id === app.id ? { ...a, used_min: mins } : a))
+    const { error } = await supabase
+      .from('earn_it')
+      .update({ used_min: mins })
+      .eq('id', app.id)
+    if (!error) {
+      setEarnIt(prev => prev.map(a => a.id === app.id ? { ...a, used_min: mins } : a))
+    }
     setEditUsed(null)
     setUsedInput('')
   }
@@ -75,14 +93,14 @@ export default function EarnIt() {
       locked: false,
       date: today()
     }).select().single()
-    if (data) setEarnIt([...earnIt, data])
-    setNewApp({ app_name: '', limit_min: '', used_min: 0, locked: false })
+    if (data) setEarnIt(prev => [...prev, data])
+    setNewApp({ app_name: '', limit_min: '' })
     setShowAdd(false)
   }
 
   async function deleteApp(id) {
     await supabase.from('earn_it').delete().eq('id', id)
-    setEarnIt(earnIt.filter(a => a.id !== id))
+    setEarnIt(prev => prev.filter(a => a.id !== id))
   }
 
   function saveTargets() {
@@ -93,10 +111,11 @@ export default function EarnIt() {
   const done = goals.filter(g => g.done).length
   const total = goals.length
   const minToUnlock = total > 0 ? Math.ceil(total * 0.6) : 5
-  const unlocked = done >= minToUnlock
+  const unlocked = done >= minToUnlock && total > 0
   const pct = total > 0 ? Math.round(done / total * 100) : 0
 
   function usedColor(app) {
+    if (!app.limit_min) return 'var(--muted)'
     const ratio = app.used_min / app.limit_min
     if (ratio >= 1) return 'var(--danger)'
     if (ratio >= 0.75) return 'var(--xp)'
@@ -106,7 +125,6 @@ export default function EarnIt() {
   return (
     <div style={{ padding: '16px', paddingBottom: '24px' }}>
 
-      {/* Header */}
       <div style={{ marginBottom: '14px' }}>
         <div style={{ fontSize: '19px', fontWeight: 500, color: 'var(--earn)' }}>Earn It</div>
         <div style={{ fontSize: '12px', color: 'var(--muted2)', marginTop: '2px' }}>Earn your free time — don't just take it</div>
@@ -154,12 +172,14 @@ export default function EarnIt() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '10px' }}>
               <div>
                 <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '4px' }}>Target bedtime</div>
-                <input type="time" value={sleepTarget} onChange={e => setSleepTarget(e.target.value)}
+                <input type="time" value={sleepTarget}
+                  onChange={e => setSleepTarget(e.target.value)}
                   style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none' }} />
               </div>
               <div>
                 <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '4px' }}>Target wake-up</div>
-                <input type="time" value={wakeTarget} onChange={e => setWakeTarget(e.target.value)}
+                <input type="time" value={wakeTarget}
+                  onChange={e => setWakeTarget(e.target.value)}
                   style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none' }} />
               </div>
             </div>
@@ -198,8 +218,10 @@ export default function EarnIt() {
         Screen time budget
       </div>
       <div style={{ fontSize: '12px', color: 'var(--muted2)', marginBottom: '10px' }}>
-        Track intentionally. Update how much time you've used today.
+        Update how many minutes you've used today for each app.
       </div>
+
+      {loading && <div style={{ color: 'var(--muted)', fontSize: '13px' }}>Loading...</div>}
 
       {earnIt.map(app => {
         const ratio = app.limit_min > 0 ? Math.min(app.used_min / app.limit_min, 1) : 0
@@ -210,17 +232,20 @@ export default function EarnIt() {
             background: 'var(--surf)', border: `0.5px solid ${isOver ? '#3d1a16' : 'var(--border)'}`,
             borderRadius: '8px', marginBottom: '6px'
           }}>
-            <div style={{ fontSize: '20px', flexShrink: 0 }}>{app.icon || '📱'}</div>
+            <div style={{ fontSize: '20px', flexShrink: 0 }}>{appIcon(app.app_name)}</div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '2px' }}>
-                {app.app_name || app.name}
-                {!unlocked && app.locked && <span style={{ fontSize: '10px', color: 'var(--danger)', marginLeft: '6px' }}>locked</span>}
+                {app.app_name}
+                {isOver && <span style={{ fontSize: '10px', color: 'var(--danger)', marginLeft: '6px' }}>over limit</span>}
               </div>
               <div style={{ fontSize: '11px', color: 'var(--muted2)', marginBottom: '4px' }}>
                 {app.used_min} / {app.limit_min} min
               </div>
               <div style={{ height: '3px', background: 'var(--surf3)', borderRadius: '2px', overflow: 'hidden' }}>
-                <div style={{ width: `${ratio * 100}%`, height: '100%', background: usedColor(app), borderRadius: '2px', transition: 'width .3s' }} />
+                <div style={{
+                  width: `${ratio * 100}%`, height: '100%',
+                  background: usedColor(app), borderRadius: '2px', transition: 'width .3s'
+                }} />
               </div>
             </div>
             {editUsed === app.id ? (
@@ -228,6 +253,7 @@ export default function EarnIt() {
                 <input
                   autoFocus
                   type="number"
+                  inputMode="numeric"
                   placeholder="min"
                   value={usedInput}
                   onChange={e => setUsedInput(e.target.value)}
@@ -242,7 +268,7 @@ export default function EarnIt() {
                   background: 'var(--acc)', border: 'none', borderRadius: '6px',
                   color: '#fff', fontSize: '11px', padding: '5px 8px', cursor: 'pointer'
                 }}>✓</button>
-                <button onClick={() => setEditUsed(null)} style={{
+                <button onClick={() => { setEditUsed(null); setUsedInput('') }} style={{
                   background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '6px',
                   color: 'var(--muted)', fontSize: '11px', padding: '5px 8px', cursor: 'pointer'
                 }}>✕</button>
@@ -269,9 +295,9 @@ export default function EarnIt() {
       }}>
         <div style={{ fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '8px' }}>Rules</div>
         {[
-          { icon: '✓', color: 'var(--fit)', text: `Complete ${minToUnlock}/${total || '?'} daily goals → all screen time unlocked` },
-          { icon: '✓', color: 'var(--fit)', text: 'All apps tracked — staying within limits earns +100 XP at end of day' },
-          { icon: '⚡', color: 'var(--xp)', text: 'Locked apps stay locked until daily minimum is reached' },
+          { icon: '✓', color: 'var(--fit)', text: `Complete ${minToUnlock}/${total || '?'} daily goals → free time unlocked` },
+          { icon: '✓', color: 'var(--fit)', text: 'Staying within all limits earns +100 XP at end of day' },
+          { icon: '⚡', color: 'var(--xp)', text: 'Be honest with yourself — this only works if you log accurately' },
         ].map((r, i) => (
           <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: i < 2 ? '6px' : 0 }}>
             <span style={{ color: r.color, flexShrink: 0 }}>{r.icon}</span>
@@ -288,16 +314,26 @@ export default function EarnIt() {
         }}>
           <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '10px' }}>Add app</div>
           <input
-            autoFocus placeholder="App name"
+            autoFocus
+            placeholder="App name"
             value={newApp.app_name}
-            onChange={e => setNewApp({ ...newApp, app_name: e.target.value })}
-            style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '8px' }}
+            onChange={e => setNewApp(prev => ({ ...prev, app_name: e.target.value }))}
+            style={{
+              width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)',
+              borderRadius: '7px', color: 'var(--text)', fontSize: '13px',
+              padding: '9px 11px', outline: 'none', marginBottom: '8px'
+            }}
           />
           <input
-            placeholder="Daily limit (minutes)" type="number"
+            placeholder="Daily limit (minutes)"
+            type="number"
             value={newApp.limit_min}
-            onChange={e => setNewApp({ ...newApp, limit_min: e.target.value })}
-            style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '10px' }}
+            onChange={e => setNewApp(prev => ({ ...prev, limit_min: e.target.value }))}
+            style={{
+              width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)',
+              borderRadius: '7px', color: 'var(--text)', fontSize: '13px',
+              padding: '9px 11px', outline: 'none', marginBottom: '10px'
+            }}
           />
           <div style={{ display: 'flex', gap: '7px' }}>
             <button onClick={addApp} style={{

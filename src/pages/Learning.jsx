@@ -11,9 +11,9 @@ export default function Learning() {
   const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(true)
   const [showAddCourse, setShowAddCourse] = useState(false)
-  const [showLogSession, setShowLogSession] = useState(null)
   const [newCourse, setNewCourse] = useState({ title: '', platform: '', total_modules: '' })
-  const [newSession, setNewSession] = useState({ minutes: '', module_number: '', notes: '' })
+  const [sessionCourse, setSessionCourse] = useState(null)
+  const [sessionData, setSessionData] = useState({ minutes: '', module_number: '', notes: '' })
 
   useEffect(() => { fetchData() }, [])
 
@@ -35,51 +35,52 @@ export default function Learning() {
       modules_done: 0,
       status: 'active'
     }).select().single()
-    if (data) setCourses([data, ...courses])
+    if (data) setCourses(prev => [data, ...prev])
     setNewCourse({ title: '', platform: '', total_modules: '' })
     setShowAddCourse(false)
   }
 
-  async function logSession(course) {
-    if (!newSession.minutes) return
-    const moduleNum = parseInt(newSession.module_number) || 0
-    const { data: sessionData } = await supabase.from('study_sessions').insert({
-      course_id: course.id,
-      minutes: parseInt(newSession.minutes),
+  async function logSession() {
+    if (!sessionData.minutes || !sessionCourse) return
+    const moduleNum = parseInt(sessionData.module_number) || 0
+
+    const { data: newSession } = await supabase.from('study_sessions').insert({
+      course_id: sessionCourse.id,
+      minutes: parseInt(sessionData.minutes),
       module_number: moduleNum,
-      notes: newSession.notes,
+      notes: sessionData.notes,
       date: today()
     }).select().single()
 
-    if (sessionData) setSessions([sessionData, ...sessions])
+    if (newSession) setSessions(prev => [newSession, ...prev])
 
-    if (moduleNum > (course.modules_done || 0)) {
+    if (moduleNum > (sessionCourse.modules_done || 0)) {
       const { data: updatedCourse } = await supabase
         .from('courses')
         .update({ modules_done: moduleNum })
-        .eq('id', course.id)
+        .eq('id', sessionCourse.id)
         .select().single()
-      if (updatedCourse) setCourses(courses.map(c => c.id === course.id ? updatedCourse : c))
+      if (updatedCourse) setCourses(prev => prev.map(c => c.id === sessionCourse.id ? updatedCourse : c))
     }
 
     await supabase.from('xp_log').insert({
-      amount: Math.round(parseInt(newSession.minutes) / 10) * 10,
+      amount: Math.round(parseInt(sessionData.minutes) / 10) * 10,
       reason: 'Study session logged',
       date: today()
     })
 
-    setNewSession({ minutes: '', module_number: '', notes: '' })
-    setShowLogSession(null)
+    setSessionCourse(null)
+    setSessionData({ minutes: '', module_number: '', notes: '' })
   }
 
   async function deleteCourse(id) {
     await supabase.from('courses').delete().eq('id', id)
-    setCourses(courses.filter(c => c.id !== id))
+    setCourses(prev => prev.filter(c => c.id !== id))
   }
 
   async function updateCourseStatus(id, status) {
     await supabase.from('courses').update({ status }).eq('id', id)
-    setCourses(courses.map(c => c.id === id ? { ...c, status } : c))
+    setCourses(prev => prev.map(c => c.id === id ? { ...c, status } : c))
   }
 
   const active = courses.filter(c => c.status === 'active')
@@ -94,7 +95,6 @@ export default function Learning() {
   })
   const weekMinutes = weekSessions.reduce((sum, s) => sum + (s.minutes || 0), 0)
   const totalMinutes = sessions.reduce((sum, s) => sum + (s.minutes || 0), 0)
-
   const views = ['day', 'week', 'month', 'ytd']
 
   function CourseCard({ course }) {
@@ -120,11 +120,9 @@ export default function Learning() {
           }}>×</button>
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--muted2)', marginBottom: '4px' }}>
-          <span>{pct}% complete</span>
-        </div>
+        <div style={{ fontSize: '11px', color: 'var(--muted2)', marginBottom: '4px' }}>{pct}% complete</div>
         <div style={{ height: '3px', background: 'var(--surf3)', borderRadius: '2px', overflow: 'hidden', marginBottom: '10px' }}>
-          <div style={{ width: `${pct}%`, height: '100%', background: 'var(--learn)', borderRadius: '2px', transition: 'width .3s' }} />
+          <div style={{ width: `${pct}%`, height: '100%', background: 'var(--learn)', borderRadius: '2px' }} />
         </div>
 
         <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
@@ -140,63 +138,17 @@ export default function Learning() {
           ))}
         </div>
 
-        {showLogSession === course.id ? (
-          <div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '7px', marginBottom: '7px' }}>
-              <input
-              placeholder="Minutes studied"
-              type="number"
-              value={newSession.minutes}
-              onChange={e => setNewSession({ ...newSession, minutes: e.target.value })}
-              style={{
-                background: 'var(--surf3)', border: '0.5px solid var(--border)',
-                borderRadius: '7px', color: 'var(--text)', fontSize: '12px',
-                padding: '8px 10px', outline: 'none', width: '100%'
-                }}
-              />
-              <input
-              placeholder="Current module #"
-              type="number"
-              inputMode="numeric"
-              value={newSession.module_number}
-              onChange={e => setNewSession({ ...newSession, module_number: e.target.value })}
-              style={{
-                background: 'var(--surf3)', border: '0.5px solid var(--border)',
-                borderRadius: '7px', color: 'var(--text)', fontSize: '12px',
-                padding: '8px 10px', outline: 'none', width: '100%'
-                }}
-              />
-            </div>
-            <input
-              placeholder="Notes (optional)"
-              value={newSession.notes}
-              onChange={e => setNewSession({ ...newSession, notes: e.target.value })}
-              style={{
-                width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)',
-                borderRadius: '7px', color: 'var(--text)', fontSize: '12px',
-                padding: '8px 10px', outline: 'none', marginBottom: '7px'
-              }}
-            />
-            <div style={{ display: 'flex', gap: '7px' }}>
-              <button onClick={() => logSession(course)} style={{
-                flex: 1, background: 'var(--learn)', border: 'none', borderRadius: '7px',
-                color: '#fff', fontSize: '12px', padding: '8px', cursor: 'pointer', fontWeight: 500
-              }}>Save</button>
-              <button onClick={() => setShowLogSession(null)} style={{
-                background: 'var(--surf3)', border: '0.5px solid var(--border)',
-                borderRadius: '7px', color: 'var(--muted)', fontSize: '12px',
-                padding: '8px 12px', cursor: 'pointer'
-              }}>Cancel</button>
-            </div>
-          </div>
-        ) : (
-          <button onClick={() => setShowLogSession(course.id)} style={{
+        <button
+          onClick={() => {
+            setSessionCourse(course)
+            setSessionData({ minutes: '', module_number: '', notes: '' })
+          }}
+          style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
             width: '100%', padding: '7px', background: 'none',
             border: '0.5px dashed var(--border)', borderRadius: '7px',
             color: 'var(--muted)', cursor: 'pointer', fontSize: '11px'
           }}>+ Log study session</button>
-        )}
       </div>
     )
   }
@@ -204,7 +156,6 @@ export default function Learning() {
   return (
     <div style={{ padding: '16px', paddingBottom: '24px' }}>
 
-      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '14px' }}>
         <div>
           <div style={{ fontSize: '19px', fontWeight: 500, color: 'var(--learn)' }}>Learning</div>
@@ -223,7 +174,6 @@ export default function Learning() {
         </div>
       </div>
 
-      {/* DAY VIEW */}
       {view === 'day' && (
         <>
           {active.length > 0 && (
@@ -286,7 +236,7 @@ export default function Learning() {
                 autoFocus
                 placeholder="Course title"
                 value={newCourse.title}
-                onChange={e => setNewCourse({ ...newCourse, title: e.target.value })}
+                onChange={e => setNewCourse(prev => ({ ...prev, title: e.target.value }))}
                 style={{
                   width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)',
                   borderRadius: '7px', color: 'var(--text)', fontSize: '13px',
@@ -296,7 +246,7 @@ export default function Learning() {
               <input
                 placeholder="Platform (Udemy, Coursera...)"
                 value={newCourse.platform}
-                onChange={e => setNewCourse({ ...newCourse, platform: e.target.value })}
+                onChange={e => setNewCourse(prev => ({ ...prev, platform: e.target.value }))}
                 style={{
                   width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)',
                   borderRadius: '7px', color: 'var(--text)', fontSize: '13px',
@@ -307,7 +257,7 @@ export default function Learning() {
                 placeholder="Total modules"
                 type="number"
                 value={newCourse.total_modules}
-                onChange={e => setNewCourse({ ...newCourse, total_modules: e.target.value })}
+                onChange={e => setNewCourse(prev => ({ ...prev, total_modules: e.target.value }))}
                 style={{
                   width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)',
                   borderRadius: '7px', color: 'var(--text)', fontSize: '13px',
@@ -337,7 +287,6 @@ export default function Learning() {
         </>
       )}
 
-      {/* WEEK VIEW */}
       {view === 'week' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px' }}>
           {[
@@ -353,7 +302,6 @@ export default function Learning() {
         </div>
       )}
 
-      {/* MONTH VIEW */}
       {view === 'month' && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
           {[
@@ -368,7 +316,6 @@ export default function Learning() {
         </div>
       )}
 
-      {/* YTD VIEW */}
       {view === 'ytd' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px' }}>
           {[
@@ -381,6 +328,83 @@ export default function Learning() {
               <div style={{ fontSize: '20px', fontWeight: 500, color: k.color }}>{k.value}</div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Session modal */}
+      {sessionCourse && (
+        <div
+          onClick={() => setSessionCourse(null)}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,.7)',
+            display: 'flex', alignItems: 'flex-end', zIndex: 100
+          }}>
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: 'var(--surf)', borderRadius: '14px 14px 0 0',
+              padding: '20px 18px 36px', width: '100%'
+            }}>
+            <div style={{ fontSize: '14px', fontWeight: 500, marginBottom: '4px' }}>Log session</div>
+            <div style={{ fontSize: '12px', color: 'var(--muted2)', marginBottom: '14px' }}>{sessionCourse.title}</div>
+
+            <div style={{ marginBottom: '10px' }}>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '4px' }}>Minutes studied</div>
+              <input
+                type="number"
+                inputMode="numeric"
+                placeholder="e.g. 45"
+                value={sessionData.minutes}
+                onChange={e => setSessionData(prev => ({ ...prev, minutes: e.target.value }))}
+                style={{
+                  width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)',
+                  borderRadius: '7px', color: 'var(--text)', fontSize: '13px',
+                  padding: '10px 12px', outline: 'none'
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '10px' }}>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '4px' }}>Current module #</div>
+              <input
+                type="number"
+                inputMode="numeric"
+                placeholder="e.g. 5"
+                value={sessionData.module_number}
+                onChange={e => setSessionData(prev => ({ ...prev, module_number: e.target.value }))}
+                style={{
+                  width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)',
+                  borderRadius: '7px', color: 'var(--text)', fontSize: '13px',
+                  padding: '10px 12px', outline: 'none'
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '14px' }}>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '4px' }}>Notes (optional)</div>
+              <input
+                placeholder="What did you cover?"
+                value={sessionData.notes}
+                onChange={e => setSessionData(prev => ({ ...prev, notes: e.target.value }))}
+                style={{
+                  width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)',
+                  borderRadius: '7px', color: 'var(--text)', fontSize: '13px',
+                  padding: '10px 12px', outline: 'none'
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button onClick={logSession} style={{
+                flex: 1, background: 'var(--learn)', border: 'none', borderRadius: '8px',
+                color: '#fff', fontSize: '13px', padding: '11px', cursor: 'pointer', fontWeight: 500
+              }}>Save session</button>
+              <button onClick={() => setSessionCourse(null)} style={{
+                background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '8px',
+                color: 'var(--muted)', fontSize: '13px', padding: '11px 16px', cursor: 'pointer'
+              }}>Cancel</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
