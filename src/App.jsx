@@ -1,53 +1,47 @@
 import { useState } from 'react'
 import './index.css'
 import Topbar from './components/Topbar'
-import BottomNav from './components/BottomNav'
+import Menu from './components/Menu'
 import Home from './pages/Home'
 import Fitness from './pages/Fitness'
 import Work from './pages/Work'
-import Diet from './pages/Diet'
 import Reading from './pages/Reading'
 import Learning from './pages/Learning'
 import Social from './pages/Social'
 import Healthcare from './pages/Healthcare'
 import Savings from './pages/Savings'
-import EarnIt from './pages/EarnIt'
+import Journal from './pages/Journal'
 import Overview from './pages/Overview'
 
-function App() {
+export default function App() {
   const [activeTab, setActiveTab] = useState('home')
+  const [menuOpen, setMenuOpen] = useState(false)
 
   return (
     <div style={{
-      background: 'var(--bg)',
-      minHeight: '100dvh',
-      display: 'flex',
-      flexDirection: 'column',
-      maxWidth: '430px',
-      margin: '0 auto'
+      background: 'var(--bg)', minHeight: '100dvh',
+      display: 'flex', flexDirection: 'column',
+      maxWidth: '430px', margin: '0 auto'
     }}>
-      <Topbar />
+      <Topbar onMenuOpen={() => setMenuOpen(true)} activeTab={activeTab} onHome={() => setActiveTab('home')} />
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {activeTab === 'home' && <Home />}
         {activeTab === 'fitness' && <Fitness />}
         {activeTab === 'work' && <Work />}
-        {activeTab === 'diet' && <Diet />}
         {activeTab === 'reading' && <Reading />}
         {activeTab === 'learning' && <Learning />}
         {activeTab === 'social' && <Social />}
         {activeTab === 'health' && <Healthcare />}
         {activeTab === 'savings' && <Savings />}
-        {activeTab === 'earnit' && <EarnIt />}
+        {activeTab === 'journal' && <Journal />}
         {activeTab === 'overview' && <Overview />}
-        {!['home', 'fitness', 'work', 'diet', 'reading', 'learning', 'social', 'health', 'savings', 'earnit', 'overview'].includes(activeTab) && (
-          <div style={{ padding: '20px', color: 'var(--muted)' }}>
-            Sección en construcción...
-          </div>
-        )}
       </div>
-      <BottomNav active={activeTab} onChange={setActiveTab} />
+      {menuOpen && (
+        <Menu
+          onNavigate={tab => setActiveTab(tab)}
+          onClose={() => setMenuOpen(false)}
+        />
+      )}
     </div>
   )
 }
-
-export default App

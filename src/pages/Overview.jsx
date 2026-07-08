@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, Tooltip } from 'recharts'
 
 function today() {
-  return new Date().toISOString().slice(0, 10)
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
 }
 
 function weekAgo() {

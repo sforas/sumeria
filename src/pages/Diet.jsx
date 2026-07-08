@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 const MEAL_TYPES = ['Breakfast', 'Lunch', 'Dinner', 'Snack']
 
 function today() {
-  return new Date().toISOString().slice(0, 10)
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
 }
 
 export default function Diet() {
