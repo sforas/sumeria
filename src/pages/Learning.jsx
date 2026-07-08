@@ -11,6 +11,7 @@ export default function Learning() {
   const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(true)
   const [showAddCourse, setShowAddCourse] = useState(false)
+  const [editCourse, setEditCourse] = useState(null)
   const [newCourse, setNewCourse] = useState({ title: '', platform: '', total_modules: '' })
   const [sessionCourse, setSessionCourse] = useState(null)
   const [sessionData, setSessionData] = useState({ minutes: '', module_number: '', notes: '' })
@@ -30,45 +31,36 @@ export default function Learning() {
   async function addCourse() {
     if (!newCourse.title.trim()) return
     const { data } = await supabase.from('courses').insert({
-      ...newCourse,
-      total_modules: parseInt(newCourse.total_modules) || 0,
-      modules_done: 0,
-      status: 'active'
+      ...newCourse, total_modules: parseInt(newCourse.total_modules) || 0, modules_done: 0, status: 'active'
     }).select().single()
     if (data) setCourses(prev => [data, ...prev])
     setNewCourse({ title: '', platform: '', total_modules: '' })
     setShowAddCourse(false)
   }
 
+  async function saveCourse() {
+    if (!editCourse) return
+    await supabase.from('courses').update({
+      title: editCourse.title, platform: editCourse.platform,
+      total_modules: parseInt(editCourse.total_modules) || 0
+    }).eq('id', editCourse.id)
+    setCourses(prev => prev.map(c => c.id === editCourse.id ? { ...c, ...editCourse, total_modules: parseInt(editCourse.total_modules) } : c))
+    setEditCourse(null)
+  }
+
   async function logSession() {
     if (!sessionData.minutes || !sessionCourse) return
     const moduleNum = parseInt(sessionData.module_number) || 0
-
     const { data: newSession } = await supabase.from('study_sessions').insert({
-      course_id: sessionCourse.id,
-      minutes: parseInt(sessionData.minutes),
-      module_number: moduleNum,
-      notes: sessionData.notes,
-      date: today()
+      course_id: sessionCourse.id, minutes: parseInt(sessionData.minutes),
+      module_number: moduleNum, notes: sessionData.notes, date: today()
     }).select().single()
-
     if (newSession) setSessions(prev => [newSession, ...prev])
-
     if (moduleNum > (sessionCourse.modules_done || 0)) {
-      const { data: updatedCourse } = await supabase
-        .from('courses')
-        .update({ modules_done: moduleNum })
-        .eq('id', sessionCourse.id)
-        .select().single()
+      const { data: updatedCourse } = await supabase.from('courses').update({ modules_done: moduleNum }).eq('id', sessionCourse.id).select().single()
       if (updatedCourse) setCourses(prev => prev.map(c => c.id === sessionCourse.id ? updatedCourse : c))
     }
-
-    await supabase.from('xp_log').insert({
-      amount: Math.round(parseInt(sessionData.minutes) / 10) * 10,
-      reason: 'Study session logged',
-      date: today()
-    })
-
+    await supabase.from('xp_log').insert({ amount: Math.round(parseInt(sessionData.minutes) / 10) * 10, reason: 'Study session logged', date: today() })
     setSessionCourse(null)
     setSessionData({ minutes: '', module_number: '', notes: '' })
   }
@@ -86,76 +78,74 @@ export default function Learning() {
   const active = courses.filter(c => c.status === 'active')
   const finished = courses.filter(c => c.status === 'finished')
   const paused = courses.filter(c => c.status === 'paused')
-
-  const weekSessions = sessions.filter(s => {
-    const d = new Date(s.date)
-    const weekAgo = new Date()
-    weekAgo.setDate(weekAgo.getDate() - 7)
-    return d >= weekAgo
-  })
+  const weekSessions = sessions.filter(s => { const d = new Date(s.date); const w = new Date(); w.setDate(w.getDate()-7); return d >= w })
   const weekMinutes = weekSessions.reduce((sum, s) => sum + (s.minutes || 0), 0)
   const totalMinutes = sessions.reduce((sum, s) => sum + (s.minutes || 0), 0)
   const views = ['day', 'week', 'month', 'ytd']
 
-  function CourseCard({ course }) {
-    const pct = course.total_modules > 0
-      ? Math.round((course.modules_done || 0) / course.total_modules * 100)
-      : 0
-
+  function CourseForm({ data, setData, onSave, onCancel, title }) {
     return (
-      <div style={{
-        background: 'var(--surf)', border: '0.5px solid var(--border)',
-        borderRadius: '10px', padding: '12px 13px', marginBottom: '8px'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '6px' }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '1px' }}>{course.title}</div>
-            <div style={{ fontSize: '11px', color: 'var(--muted2)' }}>
-              {course.platform} · Module {course.modules_done || 0}/{course.total_modules}
+      <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '13px', marginBottom: '8px' }}>
+        <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '10px' }}>{title}</div>
+        <input placeholder="Course title" value={data.title} onChange={e => setData(p => ({ ...p, title: e.target.value }))}
+          style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '8px' }} />
+        <input placeholder="Platform (Udemy, Coursera...)" value={data.platform} onChange={e => setData(p => ({ ...p, platform: e.target.value }))}
+          style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '8px' }} />
+        <input placeholder="Total modules" type="number" value={data.total_modules} onChange={e => setData(p => ({ ...p, total_modules: e.target.value }))}
+          style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '10px' }} />
+        <div style={{ display: 'flex', gap: '7px' }}>
+          <button onClick={onSave} style={{ flex: 1, background: 'var(--learn)', border: 'none', borderRadius: '7px', color: '#fff', fontSize: '13px', padding: '9px', cursor: 'pointer', fontWeight: 500 }}>Save</button>
+          <button onClick={onCancel} style={{ background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--muted)', fontSize: '13px', padding: '9px 14px', cursor: 'pointer' }}>Cancel</button>
+        </div>
+      </div>
+    )
+  }
+
+  function CourseCard({ course }) {
+    const pct = course.total_modules > 0 ? Math.round((course.modules_done || 0) / course.total_modules * 100) : 0
+    return (
+      <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '12px 13px', marginBottom: '8px' }}>
+        {editCourse?.id === course.id ? (
+          <CourseForm data={editCourse} setData={setEditCourse} onSave={saveCourse} onCancel={() => setEditCourse(null)} title="Edit course" />
+        ) : (
+          <>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '6px' }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '1px' }}>{course.title}</div>
+                <div style={{ fontSize: '11px', color: 'var(--muted2)' }}>{course.platform} · Module {course.modules_done || 0}/{course.total_modules}</div>
+              </div>
+              <div style={{ display: 'flex', gap: '4px' }}>
+                <button onClick={() => setEditCourse({ ...course })} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '14px' }}>✏️</button>
+                <button onClick={() => deleteCourse(course.id)} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '16px' }}>×</button>
+              </div>
             </div>
-          </div>
-          <button onClick={() => deleteCourse(course.id)} style={{
-            background: 'none', border: 'none', color: 'var(--muted)',
-            cursor: 'pointer', fontSize: '16px', padding: '0', marginLeft: '8px'
-          }}>×</button>
-        </div>
-
-        <div style={{ fontSize: '11px', color: 'var(--muted2)', marginBottom: '4px' }}>{pct}% complete</div>
-        <div style={{ height: '3px', background: 'var(--surf3)', borderRadius: '2px', overflow: 'hidden', marginBottom: '10px' }}>
-          <div style={{ width: `${pct}%`, height: '100%', background: 'var(--learn)', borderRadius: '2px' }} />
-        </div>
-
-        <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
-          {['active', 'paused', 'finished'].map(s => (
-            <button key={s} onClick={() => updateCourseStatus(course.id, s)} style={{
-              padding: '2px 8px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer',
-              border: '0.5px solid var(--border)',
-              background: course.status === s ? 'var(--learn)' : 'var(--surf3)',
-              color: course.status === s ? '#fff' : 'var(--muted)',
-              fontWeight: course.status === s ? 500 : 400,
-              textTransform: 'capitalize'
-            }}>{s}</button>
-          ))}
-        </div>
-
-        <button
-          onClick={() => {
-            setSessionCourse(course)
-            setSessionData({ minutes: '', module_number: '', notes: '' })
-          }}
-          style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
-            width: '100%', padding: '7px', background: 'none',
-            border: '0.5px dashed var(--border)', borderRadius: '7px',
-            color: 'var(--muted)', cursor: 'pointer', fontSize: '11px'
-          }}>+ Log study session</button>
+            <div style={{ fontSize: '11px', color: 'var(--muted2)', marginBottom: '4px' }}>{pct}% complete</div>
+            <div style={{ height: '3px', background: 'var(--surf3)', borderRadius: '2px', overflow: 'hidden', marginBottom: '10px' }}>
+              <div style={{ width: `${pct}%`, height: '100%', background: 'var(--learn)', borderRadius: '2px' }} />
+            </div>
+            <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
+              {['active', 'paused', 'finished'].map(s => (
+                <button key={s} onClick={() => updateCourseStatus(course.id, s)} style={{
+                  padding: '2px 8px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer',
+                  border: '0.5px solid var(--border)',
+                  background: course.status === s ? 'var(--learn)' : 'var(--surf3)',
+                  color: course.status === s ? '#fff' : 'var(--muted)',
+                  fontWeight: course.status === s ? 500 : 400, textTransform: 'capitalize'
+                }}>{s}</button>
+              ))}
+            </div>
+            <button onClick={() => { setSessionCourse(course); setSessionData({ minutes: '', module_number: '', notes: '' }) }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', width: '100%', padding: '7px', background: 'none', border: '0.5px dashed var(--border)', borderRadius: '7px', color: 'var(--muted)', cursor: 'pointer', fontSize: '11px' }}>
+              + Log study session
+            </button>
+          </>
+        )}
       </div>
     )
   }
 
   return (
     <div style={{ padding: '16px', paddingBottom: '24px' }}>
-
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '14px' }}>
         <div>
           <div style={{ fontSize: '19px', fontWeight: 500, color: 'var(--learn)' }}>Learning</div>
@@ -164,11 +154,9 @@ export default function Learning() {
         <div style={{ display: 'flex', gap: '3px' }}>
           {views.map(v => (
             <button key={v} onClick={() => setView(v)} style={{
-              background: view === v ? 'var(--surf3)' : 'none',
-              border: '0.5px solid var(--border)',
-              borderColor: view === v ? 'var(--surf3)' : 'var(--border)',
-              borderRadius: '5px', color: view === v ? 'var(--text)' : 'var(--muted)',
-              padding: '4px 7px', fontSize: '10px', cursor: 'pointer'
+              background: view === v ? 'var(--surf3)' : 'none', border: '0.5px solid var(--border)',
+              borderColor: view === v ? 'var(--surf3)' : 'var(--border)', borderRadius: '5px',
+              color: view === v ? 'var(--text)' : 'var(--muted)', padding: '4px 7px', fontSize: '10px', cursor: 'pointer'
             }}>{v.toUpperCase()}</button>
           ))}
         </div>
@@ -178,111 +166,39 @@ export default function Learning() {
         <>
           {active.length > 0 && (
             <>
-              <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '8px' }}>
-                Active courses
-              </div>
+              <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '8px' }}>Active courses</div>
               {active.map(c => <CourseCard key={c.id} course={c} />)}
             </>
           )}
-
           {paused.length > 0 && (
             <>
-              <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px', margin: '12px 0 8px' }}>
-                Paused
-              </div>
+              <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px', margin: '12px 0 8px' }}>Paused</div>
               {paused.map(c => <CourseCard key={c.id} course={c} />)}
             </>
           )}
-
           {finished.length > 0 && (
             <>
-              <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px', margin: '12px 0 8px' }}>
-                Finished
-              </div>
+              <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px', margin: '12px 0 8px' }}>Finished</div>
               {finished.map(c => (
-                <div key={c.id} style={{
-                  display: 'flex', gap: '10px', padding: '10px 12px',
-                  background: 'var(--surf)', border: '0.5px solid var(--border)',
-                  borderRadius: '8px', marginBottom: '6px', opacity: 0.7
-                }}>
+                <div key={c.id} style={{ display: 'flex', gap: '10px', padding: '10px 12px', background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '8px', marginBottom: '6px', opacity: 0.7 }}>
                   <div style={{ fontSize: '18px' }}>✅</div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: '13px', fontWeight: 500 }}>{c.title}</div>
                     <div style={{ fontSize: '11px', color: 'var(--muted2)' }}>{c.platform} · {c.total_modules} modules</div>
                   </div>
-                  <button onClick={() => deleteCourse(c.id)} style={{
-                    background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '16px'
-                  }}>×</button>
+                  <button onClick={() => setEditCourse({ ...c })} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '14px' }}>✏️</button>
+                  <button onClick={() => deleteCourse(c.id)} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '16px' }}>×</button>
                 </div>
               ))}
             </>
           )}
-
           {!loading && courses.length === 0 && (
-            <div style={{
-              background: 'var(--surf)', border: '0.5px solid var(--border)',
-              borderRadius: '10px', padding: '16px', textAlign: 'center',
-              color: 'var(--muted)', fontSize: '13px', marginBottom: '8px'
-            }}>No courses yet</div>
+            <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '16px', textAlign: 'center', color: 'var(--muted)', fontSize: '13px', marginBottom: '8px' }}>No courses yet</div>
           )}
-
           {showAddCourse ? (
-            <div style={{
-              background: 'var(--surf)', border: '0.5px solid var(--border)',
-              borderRadius: '10px', padding: '13px', marginTop: '6px'
-            }}>
-              <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '10px' }}>Add course</div>
-              <input
-                autoFocus
-                placeholder="Course title"
-                value={newCourse.title}
-                onChange={e => setNewCourse(prev => ({ ...prev, title: e.target.value }))}
-                style={{
-                  width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)',
-                  borderRadius: '7px', color: 'var(--text)', fontSize: '13px',
-                  padding: '9px 11px', outline: 'none', marginBottom: '8px'
-                }}
-              />
-              <input
-                placeholder="Platform (Udemy, Coursera...)"
-                value={newCourse.platform}
-                onChange={e => setNewCourse(prev => ({ ...prev, platform: e.target.value }))}
-                style={{
-                  width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)',
-                  borderRadius: '7px', color: 'var(--text)', fontSize: '13px',
-                  padding: '9px 11px', outline: 'none', marginBottom: '8px'
-                }}
-              />
-              <input
-                placeholder="Total modules"
-                type="number"
-                value={newCourse.total_modules}
-                onChange={e => setNewCourse(prev => ({ ...prev, total_modules: e.target.value }))}
-                style={{
-                  width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)',
-                  borderRadius: '7px', color: 'var(--text)', fontSize: '13px',
-                  padding: '9px 11px', outline: 'none', marginBottom: '10px'
-                }}
-              />
-              <div style={{ display: 'flex', gap: '7px' }}>
-                <button onClick={addCourse} style={{
-                  flex: 1, background: 'var(--learn)', border: 'none', borderRadius: '7px',
-                  color: '#fff', fontSize: '13px', padding: '9px', cursor: 'pointer', fontWeight: 500
-                }}>Save</button>
-                <button onClick={() => setShowAddCourse(false)} style={{
-                  background: 'var(--surf3)', border: '0.5px solid var(--border)',
-                  borderRadius: '7px', color: 'var(--muted)', fontSize: '13px',
-                  padding: '9px 14px', cursor: 'pointer'
-                }}>Cancel</button>
-              </div>
-            </div>
+            <CourseForm data={newCourse} setData={setNewCourse} onSave={addCourse} onCancel={() => setShowAddCourse(false)} title="Add course" />
           ) : (
-            <button onClick={() => setShowAddCourse(true)} style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
-              width: '100%', padding: '9px', background: 'none',
-              border: '0.5px dashed var(--border)', borderRadius: '8px',
-              color: 'var(--muted)', cursor: 'pointer', fontSize: '12px', marginTop: '6px'
-            }}>+ Add course</button>
+            <button onClick={() => setShowAddCourse(true)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', width: '100%', padding: '9px', background: 'none', border: '0.5px dashed var(--border)', borderRadius: '8px', color: 'var(--muted)', cursor: 'pointer', fontSize: '12px', marginTop: '6px' }}>+ Add course</button>
           )}
         </>
       )}
@@ -291,7 +207,7 @@ export default function Learning() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px' }}>
           {[
             { label: 'Sessions', value: weekSessions.length, color: 'var(--learn)' },
-            { label: 'Hours studied', value: `${Math.floor(weekMinutes / 60)}h ${weekMinutes % 60}m`, color: 'var(--text)' },
+            { label: 'Hours studied', value: `${Math.floor(weekMinutes/60)}h ${weekMinutes%60}m`, color: 'var(--text)' },
             { label: 'Active courses', value: active.length, color: 'var(--learn)' },
           ].map((k, i) => (
             <div key={i} style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '11px 13px' }}>
@@ -306,7 +222,7 @@ export default function Learning() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
           {[
             { label: 'Courses finished', value: finished.length, color: 'var(--fit)' },
-            { label: 'Total hours', value: `${Math.floor(totalMinutes / 60)}h`, color: 'var(--learn)' },
+            { label: 'Total hours', value: `${Math.floor(totalMinutes/60)}h`, color: 'var(--learn)' },
           ].map((k, i) => (
             <div key={i} style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '11px 13px' }}>
               <div style={{ fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '4px' }}>{k.label}</div>
@@ -320,7 +236,7 @@ export default function Learning() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px' }}>
           {[
             { label: 'Courses finished', value: finished.length, color: 'var(--fit)' },
-            { label: 'Total hours', value: `${Math.floor(totalMinutes / 60)}h`, color: 'var(--learn)' },
+            { label: 'Total hours', value: `${Math.floor(totalMinutes/60)}h`, color: 'var(--learn)' },
             { label: 'Total sessions', value: sessions.length, color: 'var(--text)' },
           ].map((k, i) => (
             <div key={i} style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '11px 13px' }}>
@@ -331,78 +247,32 @@ export default function Learning() {
         </div>
       )}
 
-      {/* Session modal */}
       {sessionCourse && (
-        <div
-          onClick={() => setSessionCourse(null)}
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,.7)',
-            display: 'flex', alignItems: 'flex-end', zIndex: 100
-          }}>
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{
-              background: 'var(--surf)', borderRadius: '14px 14px 0 0',
-              padding: '20px 18px 36px', width: '100%'
-            }}>
+        <div onClick={() => setSessionCourse(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.7)', display: 'flex', alignItems: 'flex-end', zIndex: 100 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--surf)', borderRadius: '14px 14px 0 0', padding: '20px 18px 36px', width: '100%' }}>
             <div style={{ fontSize: '14px', fontWeight: 500, marginBottom: '4px' }}>Log session</div>
             <div style={{ fontSize: '12px', color: 'var(--muted2)', marginBottom: '14px' }}>{sessionCourse.title}</div>
-
             <div style={{ marginBottom: '10px' }}>
               <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '4px' }}>Minutes studied</div>
-              <input
-                type="number"
-                inputMode="numeric"
-                placeholder="e.g. 45"
-                value={sessionData.minutes}
+              <input type="number" inputMode="numeric" placeholder="e.g. 45" value={sessionData.minutes}
                 onChange={e => setSessionData(prev => ({ ...prev, minutes: e.target.value }))}
-                style={{
-                  width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)',
-                  borderRadius: '7px', color: 'var(--text)', fontSize: '13px',
-                  padding: '10px 12px', outline: 'none'
-                }}
-              />
+                style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '10px 12px', outline: 'none' }} />
             </div>
-
             <div style={{ marginBottom: '10px' }}>
               <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '4px' }}>Current module #</div>
-              <input
-                type="number"
-                inputMode="numeric"
-                placeholder="e.g. 5"
-                value={sessionData.module_number}
+              <input type="number" inputMode="numeric" placeholder="e.g. 5" value={sessionData.module_number}
                 onChange={e => setSessionData(prev => ({ ...prev, module_number: e.target.value }))}
-                style={{
-                  width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)',
-                  borderRadius: '7px', color: 'var(--text)', fontSize: '13px',
-                  padding: '10px 12px', outline: 'none'
-                }}
-              />
+                style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '10px 12px', outline: 'none' }} />
             </div>
-
             <div style={{ marginBottom: '14px' }}>
               <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '4px' }}>Notes (optional)</div>
-              <input
-                placeholder="What did you cover?"
-                value={sessionData.notes}
+              <input placeholder="What did you cover?" value={sessionData.notes}
                 onChange={e => setSessionData(prev => ({ ...prev, notes: e.target.value }))}
-                style={{
-                  width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)',
-                  borderRadius: '7px', color: 'var(--text)', fontSize: '13px',
-                  padding: '10px 12px', outline: 'none'
-                }}
-              />
+                style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '10px 12px', outline: 'none' }} />
             </div>
-
             <div style={{ display: 'flex', gap: '8px' }}>
-              <button onClick={logSession} style={{
-                flex: 1, background: 'var(--learn)', border: 'none', borderRadius: '8px',
-                color: '#fff', fontSize: '13px', padding: '11px', cursor: 'pointer', fontWeight: 500
-              }}>Save session</button>
-              <button onClick={() => setSessionCourse(null)} style={{
-                background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '8px',
-                color: 'var(--muted)', fontSize: '13px', padding: '11px 16px', cursor: 'pointer'
-              }}>Cancel</button>
+              <button onClick={logSession} style={{ flex: 1, background: 'var(--learn)', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '13px', padding: '11px', cursor: 'pointer', fontWeight: 500 }}>Save session</button>
+              <button onClick={() => setSessionCourse(null)} style={{ background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '8px', color: 'var(--muted)', fontSize: '13px', padding: '11px 16px', cursor: 'pointer' }}>Cancel</button>
             </div>
           </div>
         </div>
