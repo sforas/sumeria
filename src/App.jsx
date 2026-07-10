@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './index.css'
+import { Notifs } from './lib/notifications'
 import Topbar from './components/Topbar'
 import Menu from './components/Menu'
 import Home from './pages/Home'
@@ -16,6 +17,10 @@ import Overview from './pages/Overview'
 export default function App() {
   const [activeTab, setActiveTab] = useState('home')
   const [menuOpen, setMenuOpen] = useState(false)
+
+  useEffect(() => {
+    Notifs.init()
+  }, [])
 
   return (
     <div style={{
@@ -37,10 +42,7 @@ export default function App() {
         {activeTab === 'overview' && <Overview />}
       </div>
       {menuOpen && (
-        <Menu
-          onNavigate={tab => setActiveTab(tab)}
-          onClose={() => setMenuOpen(false)}
-        />
+        <Menu onNavigate={tab => setActiveTab(tab)} onClose={() => setMenuOpen(false)} />
       )}
     </div>
   )
