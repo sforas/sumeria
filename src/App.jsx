@@ -14,11 +14,13 @@ import Savings from './pages/Savings'
 import Journal from './pages/Journal'
 import Overview from './pages/Overview'
 import WeeklyReview from './pages/WeeklyReview'
+import MonthlyReview from './pages/MonthlyReview'
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('home')
   const [menuOpen, setMenuOpen] = useState(false)
   const [showWeeklyReview, setShowWeeklyReview] = useState(false)
+  const [showMonthlyReview, setShowMonthlyReview] = useState(false)
 
   useEffect(() => {
     Notifs.init()
@@ -35,6 +37,20 @@ export default function App() {
       localStorage.setItem(reviewKey, 'true')
     }
   }, [])
+
+  useEffect(() => {
+  const now = new Date()
+  const tomorrow = new Date(now)
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  const isLastDay = tomorrow.getMonth() !== now.getMonth()
+  const isEvening = now.getHours() >= 20
+  const reviewKey = `sumeria_monthly_review_${now.toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' }).slice(0, 7)}`
+  const alreadySeen = localStorage.getItem(reviewKey)
+  if (isLastDay && isEvening && !alreadySeen) {
+    setShowMonthlyReview(true)
+    localStorage.setItem(reviewKey, 'true')
+  }
+}, [])
 
   return (
     <div style={{
@@ -61,6 +77,10 @@ export default function App() {
             if (tab === 'weekly-review') {
               setShowWeeklyReview(true)
               setMenuOpen(false)
+            }
+            if (tab === 'monthly-review') {
+              setShowMonthlyReview(true)
+              setMenuOpen(false)
             } else {
               setActiveTab(tab)
               setMenuOpen(false)
@@ -70,6 +90,7 @@ export default function App() {
         />
       )}
       {showWeeklyReview && <WeeklyReview onClose={() => setShowWeeklyReview(false)} />}
+      {showMonthlyReview && <MonthlyReview onClose={() => setShowMonthlyReview(false)} />}
     </div>
   )
 }
