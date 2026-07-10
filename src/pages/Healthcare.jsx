@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { Notifs } from '../lib/notifications'
 
 function today() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
@@ -26,6 +27,13 @@ function isAlternateDay(startDate) {
 
 export default function Healthcare() {
   const [view, setView] = useState('day')
+  const [notifPerm, setNotifPerm] = useState(typeof Notification !== 'undefined' ? Notification.permission : 'denied')
+
+async function requestNotifs() {
+  if (typeof Notification === 'undefined') return
+  const perm = await Notification.requestPermission()
+  setNotifPerm(perm)
+}
   const [medicines, setMedicines] = useState([])
   const [medLog, setMedLog] = useState({})
   const [sleepLog, setSleepLog] = useState([])
@@ -247,6 +255,23 @@ export default function Healthcare() {
 
       {view === 'day' && (
         <>
+        {notifPerm !== 'granted' && (
+  <div style={{
+    background: '#0e0d1c', border: '0.5px solid var(--work)',
+    borderRadius: '10px', padding: '12px 14px', marginBottom: '12px',
+    display: 'flex', alignItems: 'center', gap: '10px'
+  }}>
+    <div style={{ fontSize: '20px' }}>🔔</div>
+    <div style={{ flex: 1 }}>
+      <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '2px' }}>Enable notifications</div>
+      <div style={{ fontSize: '11px', color: 'var(--muted2)' }}>Get medicine reminders and daily check-ins</div>
+    </div>
+    <button onClick={requestNotifs} style={{
+      background: 'var(--work)', border: 'none', borderRadius: '7px',
+      color: '#fff', fontSize: '12px', padding: '7px 12px', cursor: 'pointer', fontWeight: 500
+    }}>Enable</button>
+  </div>
+)}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '14px' }}>
             <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '11px 13px' }}>
               <div style={{ fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '4px' }}>Medicines today</div>
