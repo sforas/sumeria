@@ -8,6 +8,7 @@ const SECTIONS = [
   { id: 'savings', label: 'Savings', emoji: '💰', color: 'var(--savings)', bg: '#061208' },
   { id: 'journal', label: 'Journal', emoji: '📓', color: '#A78BFA', bg: '#0e0a1c' },
   { id: 'overview', label: 'Overview', emoji: '🌐', color: 'var(--acc)', bg: '#0d0b1a' },
+  { id: 'weekly-review', label: 'Weekly Review', emoji: '📊', color: 'var(--xp)', bg: '#1a1208' },
 ]
 
 export default function Menu({ onNavigate, onClose }) {

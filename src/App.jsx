@@ -13,13 +13,27 @@ import Healthcare from './pages/Healthcare'
 import Savings from './pages/Savings'
 import Journal from './pages/Journal'
 import Overview from './pages/Overview'
+import WeeklyReview from './pages/WeeklyReview'
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('home')
   const [menuOpen, setMenuOpen] = useState(false)
+  const [showWeeklyReview, setShowWeeklyReview] = useState(false)
 
   useEffect(() => {
     Notifs.init()
+  }, [])
+
+  useEffect(() => {
+    const now = new Date()
+    const isSunday = now.getDay() === 0
+    const isEvening = now.getHours() >= 20
+    const reviewKey = `sumeria_weekly_review_${now.toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })}`
+    const alreadySeen = localStorage.getItem(reviewKey)
+    if (isSunday && isEvening && !alreadySeen) {
+      setShowWeeklyReview(true)
+      localStorage.setItem(reviewKey, 'true')
+    }
   }, [])
 
   return (
@@ -42,8 +56,20 @@ export default function App() {
         {activeTab === 'overview' && <Overview />}
       </div>
       {menuOpen && (
-        <Menu onNavigate={tab => setActiveTab(tab)} onClose={() => setMenuOpen(false)} />
+        <Menu
+          onNavigate={tab => {
+            if (tab === 'weekly-review') {
+              setShowWeeklyReview(true)
+              setMenuOpen(false)
+            } else {
+              setActiveTab(tab)
+              setMenuOpen(false)
+            }
+          }}
+          onClose={() => setMenuOpen(false)}
+        />
       )}
+      {showWeeklyReview && <WeeklyReview onClose={() => setShowWeeklyReview(false)} />}
     </div>
   )
 }
