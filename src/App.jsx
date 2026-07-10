@@ -15,12 +15,14 @@ import Journal from './pages/Journal'
 import Overview from './pages/Overview'
 import WeeklyReview from './pages/WeeklyReview'
 import MonthlyReview from './pages/MonthlyReview'
+import YearlyReview from './pages/YearlyReview'
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('home')
   const [menuOpen, setMenuOpen] = useState(false)
   const [showWeeklyReview, setShowWeeklyReview] = useState(false)
   const [showMonthlyReview, setShowMonthlyReview] = useState(false)
+  const [showYearlyReview, setShowYearlyReview] = useState(false)
 
   useEffect(() => {
     Notifs.init()
@@ -52,6 +54,22 @@ export default function App() {
   }
 }, [])
 
+useEffect(() => {
+  const now = new Date()
+  const isLastDay = now.getMonth() === 11 && now.getDate() === 28
+  const isEvening = now.getHours() >= 20
+  const reviewKey = `sumeria_yearly_review_${currentYear()}`
+  const alreadySeen = localStorage.getItem(reviewKey)
+  if (isLastDay && isEvening && !alreadySeen) {
+    setShowYearlyReview(true)
+    localStorage.setItem(reviewKey, 'true')
+  }
+}, [])
+
+function currentYear() {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' }).slice(0, 4)
+}
+
   return (
     <div style={{
       background: 'var(--bg)', minHeight: '100dvh',
@@ -81,7 +99,12 @@ export default function App() {
             if (tab === 'monthly-review') {
               setShowMonthlyReview(true)
               setMenuOpen(false)
-            } else {
+            }
+            if (tab === 'yearly-review') {
+              setShowYearlyReview(true)
+              setMenuOpen(false)
+            }
+            else {
               setActiveTab(tab)
               setMenuOpen(false)
             }
@@ -91,6 +114,7 @@ export default function App() {
       )}
       {showWeeklyReview && <WeeklyReview onClose={() => setShowWeeklyReview(false)} />}
       {showMonthlyReview && <MonthlyReview onClose={() => setShowMonthlyReview(false)} />}
+      {showYearlyReview && <YearlyReview onClose={() => setShowYearlyReview(false)} />}
     </div>
   )
 }

@@ -10,6 +10,7 @@ const SECTIONS = [
   { id: 'overview', label: 'Overview', emoji: '🌐', color: 'var(--acc)', bg: '#0d0b1a' },
   { id: 'weekly-review', label: 'Weekly Review', emoji: '📊', color: 'var(--xp)', bg: '#1a1208' },
   { id: 'monthly-review', label: 'Monthly Review', emoji: '📅', color: '#A78BFA', bg: '#0e0a1c' },
+  { id: 'yearly-review', label: 'Yearly Review', emoji: '🎊', color: 'var(--xp)', bg: '#1a1208' },
 ]
 
 export default function Menu({ onNavigate, onClose }) {
