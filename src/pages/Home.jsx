@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
+import { Notifs } from '../lib/notifications'
 
 function today() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
@@ -68,8 +69,10 @@ export default function Home() {
   const [newGoal, setNewGoal] = useState('')
   const [newArea, setNewArea] = useState('fitness')
   const [showAdd, setShowAdd] = useState(false)
+  const [editGoal, setEditGoal] = useState(null)
   const [modal, setModal] = useState(null)
   const [quickLog, setQuickLog] = useState({})
+  const [notifPerm, setNotifPerm] = useState(typeof Notification !== 'undefined' ? Notification.permission : 'denied')
 
   // Morning check states
   const [showEnergyCheck, setShowEnergyCheck] = useState(false)
@@ -81,6 +84,7 @@ export default function Home() {
   const dayOfWeek = new Date().getDay()
   const timerRef = useRef(null)
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchAll() }, [])
 
   useEffect(() => {
@@ -124,13 +128,12 @@ export default function Home() {
     ])
 
     const currentHour = new Date().getHours()
-console.log('Current hour:', currentHour, 'Routines:', routinesData?.map(r => r.title))
-const todayRoutines = (routinesData || []).filter(r => {
-  const days = r.days_of_week.split(',').map(Number)
-  if (!days.includes(dayOfWeek)) return false
-  if (r.quick_log_type === 'reflection' && currentHour < 20) return false
-  return true
-})
+    const todayRoutines = (routinesData || []).filter(r => {
+      const days = r.days_of_week.split(',').map(Number)
+      if (!days.includes(dayOfWeek)) return false
+      if (r.quick_log_type === 'reflection' && currentHour < 20) return false
+      return true
+    })
     setRoutineItems(todayRoutines)
 
     const rlogMap = {}
@@ -316,6 +319,13 @@ const todayRoutines = (routinesData || []).filter(r => {
     setGoals(goals.filter(g => g.id !== id))
   }
 
+  async function saveGoal() {
+    if (!editGoal?.text.trim()) return
+    await supabase.from('goals').update({ text: editGoal.text, area: editGoal.area }).eq('id', editGoal.id)
+    setGoals(prev => prev.map(g => g.id === editGoal.id ? { ...g, text: editGoal.text, area: editGoal.area } : g))
+    setEditGoal(null)
+  }
+
   async function toggleMed(med) {
     const current = medLog[med.id]
     const existing = await supabase.from('med_log').select('*').eq('medicine_id', med.id).eq('date', today()).single()
@@ -331,6 +341,11 @@ const todayRoutines = (routinesData || []).filter(r => {
   async function dismissReminder(id) {
     await supabase.from('reminders').update({ done: true }).eq('id', id)
     setReminders(prev => prev.filter(r => r.id !== id))
+  }
+
+  async function enableNotifs() {
+    await Notifs.enable()
+    setNotifPerm(Notification.permission)
   }
 
   const routineDone = routineItems.filter(r => routineLog[r.id]?.done).length
@@ -629,6 +644,32 @@ const todayRoutines = (routinesData || []).filter(r => {
         </div>
       </div>
 
+      {notifPerm !== 'granted' && typeof Notification !== 'undefined' && (
+        <div style={{
+          background: '#0e0d1c', border: '0.5px solid var(--work)',
+          borderRadius: '10px', padding: '12px 14px', marginBottom: '12px',
+          display: 'flex', alignItems: 'center', gap: '10px'
+        }}>
+          <div style={{ fontSize: '20px' }}>🔔</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '2px' }}>
+              {notifPerm === 'denied' ? 'Notifications blocked' : 'Enable notifications'}
+            </div>
+            <div style={{ fontSize: '11px', color: 'var(--muted2)' }}>
+              {notifPerm === 'denied'
+                ? 'Allow notifications for this site in your browser settings to get reminders'
+                : 'Get morning, evening and medicine reminders'}
+            </div>
+          </div>
+          {notifPerm !== 'denied' && (
+            <button onClick={enableNotifs} style={{
+              background: 'var(--work)', border: 'none', borderRadius: '7px',
+              color: '#fff', fontSize: '12px', padding: '7px 12px', cursor: 'pointer', fontWeight: 500
+            }}>Enable</button>
+          )}
+        </div>
+      )}
+
       {/* Daily priority card */}
       {journal?.priority && (
         <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderLeft: '2px solid var(--acc)', borderRadius: '0 8px 8px 0', padding: '10px 13px', marginBottom: '12px' }}>
@@ -752,10 +793,29 @@ const todayRoutines = (routinesData || []).filter(r => {
               <div style={{ marginLeft: 'auto', fontSize: '10px', color: 'var(--muted)' }}>{area.goals.filter(g => g.done).length}/{area.goals.length}</div>
             </div>
             {area.goals.map((goal, i) => (
-              <div key={goal.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: i === 0 ? '0' : '6px 0 0', borderTop: i === 0 ? 'none' : '0.5px solid var(--border)' }}>
-                <div onClick={() => toggleGoal(goal)} style={{ width: '16px', height: '16px', borderRadius: '50%', border: goal.done ? 'none' : '1.5px solid var(--border)', background: goal.done ? 'var(--acc)' : 'none', cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', color: '#fff' }}>{goal.done ? '✓' : ''}</div>
-                <div style={{ fontSize: '12px', flex: 1, textDecoration: goal.done ? 'line-through' : 'none', color: goal.done ? 'var(--muted)' : 'var(--text)' }}>{goal.text}</div>
-                <div onClick={() => deleteGoal(goal.id)} style={{ fontSize: '14px', color: 'var(--muted)', cursor: 'pointer', opacity: .6 }}>×</div>
+              <div key={goal.id} style={{ padding: i === 0 ? '0' : '6px 0 0', borderTop: i === 0 ? 'none' : '0.5px solid var(--border)' }}>
+                {editGoal?.id === goal.id ? (
+                  <div style={{ padding: '2px 0' }}>
+                    <input autoFocus value={editGoal.text} onChange={e => setEditGoal(p => ({ ...p, text: e.target.value }))}
+                      onKeyDown={e => e.key === 'Enter' && saveGoal()}
+                      style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '6px', color: 'var(--text)', fontSize: '12px', padding: '6px 8px', outline: 'none', marginBottom: '6px' }} />
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <select value={editGoal.area} onChange={e => setEditGoal(p => ({ ...p, area: e.target.value }))}
+                        style={{ flex: 1, background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '6px', color: 'var(--text)', fontSize: '11px', padding: '5px 6px', outline: 'none' }}>
+                        {AREAS.map(a => <option key={a.id} value={a.id}>{a.label}</option>)}
+                      </select>
+                      <button onClick={saveGoal} style={{ background: 'var(--acc)', border: 'none', borderRadius: '6px', color: '#fff', fontSize: '11px', padding: '5px 10px', cursor: 'pointer' }}>Save</button>
+                      <button onClick={() => setEditGoal(null)} style={{ background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '6px', color: 'var(--muted)', fontSize: '11px', padding: '5px 8px', cursor: 'pointer' }}>✕</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div onClick={() => toggleGoal(goal)} style={{ width: '16px', height: '16px', borderRadius: '50%', border: goal.done ? 'none' : '1.5px solid var(--border)', background: goal.done ? 'var(--acc)' : 'none', cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', color: '#fff' }}>{goal.done ? '✓' : ''}</div>
+                    <div style={{ fontSize: '12px', flex: 1, textDecoration: goal.done ? 'line-through' : 'none', color: goal.done ? 'var(--muted)' : 'var(--text)' }}>{goal.text}</div>
+                    <div onClick={() => setEditGoal({ id: goal.id, text: goal.text, area: goal.area })} style={{ fontSize: '11px', color: 'var(--muted)', cursor: 'pointer', opacity: .6 }}>✏️</div>
+                    <div onClick={() => deleteGoal(goal.id)} style={{ fontSize: '14px', color: 'var(--muted)', cursor: 'pointer', opacity: .6 }}>×</div>
+                  </div>
+                )}
               </div>
             ))}
           </div>

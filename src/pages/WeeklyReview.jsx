@@ -1,22 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
-function weekStart() {
-  const d = new Date()
-  const day = d.getDay()
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
-  const monday = new Date(d.setDate(diff))
-  return monday.toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
-}
-
-function weekEnd() {
-  const d = new Date()
-  const day = d.getDay()
-  const diff = d.getDate() - day + (day === 0 ? 0 : 7)
-  const sunday = new Date(d.setDate(diff))
-  return sunday.toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
-}
-
 function lastWeekStart() {
   const d = new Date()
   const day = d.getDay()

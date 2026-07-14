@@ -66,7 +66,7 @@ export default function Reading() {
   const totalPagesRead = books.reduce((sum, b) => sum + (b.pages_read || 0), 0)
   const views = ['day', 'week', 'month', 'ytd']
 
-  function BookEditForm({ book }) {
+  function BookEditForm() {
     return (
       <div style={{ padding: '4px 0' }}>
         <input placeholder="Title" value={editBook.title} onChange={e => setEditBook(p => ({ ...p, title: e.target.value }))}
@@ -118,7 +118,7 @@ export default function Reading() {
           {reading.map(book => (
             <div key={book.id} style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '12px 13px', marginBottom: '8px' }}>
               {editBook?.id === book.id ? (
-                <BookEditForm book={book} />
+                <BookEditForm />
               ) : (
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
                   <div style={{ width: '36px', height: '48px', borderRadius: '4px', background: 'var(--surf3)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>📖</div>

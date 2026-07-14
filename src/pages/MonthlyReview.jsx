@@ -2,10 +2,6 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer } from 'recharts'
 
-function currentMonth() {
-  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' }).slice(0, 7)
-}
-
 function lastMonth() {
   const d = new Date()
   d.setMonth(d.getMonth() - 1)
@@ -27,6 +23,7 @@ export default function MonthlyReview({ onClose }) {
   const [existingReview, setExistingReview] = useState(null)
   const month = lastMonth()
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchStats() }, [])
 
   async function fetchStats() {

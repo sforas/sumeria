@@ -15,9 +15,11 @@ export default function Topbar({ onMenuOpen, activeTab, onHome }) {
 
   return (
     <div style={{
-      background: 'var(--surf)', borderBottom: '0.5px solid var(--border)',
+      background: 'var(--surf)',
+      borderBottom: activeTab === 'home' ? '0.5px solid var(--border)' : `2px solid ${accentColor}`,
       padding: '11px 18px', display: 'flex', alignItems: 'center',
-      justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 50
+      justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 50,
+      transition: 'border-color .15s'
     }}>
       <button onClick={onMenuOpen} style={{
         background: 'none', border: 'none', cursor: 'pointer',
@@ -42,10 +44,10 @@ export default function Topbar({ onMenuOpen, activeTab, onHome }) {
 
       {activeTab !== 'home' && (
         <button onClick={onHome} style={{
-          background: 'var(--surf3)', border: '0.5px solid var(--border)',
-          borderRadius: '6px', color: 'var(--muted)', fontSize: '11px',
+          background: 'var(--surf3)', border: `0.5px solid ${accentColor}44`,
+          borderRadius: '6px', color: accentColor, fontSize: '11px',
           padding: '5px 12px', cursor: 'pointer'
-        }}>← Home</button>
+        }}>⌂ Home</button>
       )}
     </div>
   )

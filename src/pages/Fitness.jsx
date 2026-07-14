@@ -53,15 +53,13 @@ export default function Fitness() {
 
   async function uploadPhoto(file) {
     if (!file) return
-    console.log('Uploading file:', file.name, file.size, file.type)
     setUploadingPhoto(true)
     try {
       const dateStr = today()
       const fileName = `${dateStr}_${Date.now()}.jpg`
-      const { data, error } = await supabase.storage
+      const { error } = await supabase.storage
         .from('progress-photos')
         .upload(fileName, file, { contentType: 'image/jpeg', upsert: false })
-      console.log('Upload result:', data, error)
       if (!error) await fetchPhotos()
     } finally {
       setUploadingPhoto(false)
@@ -233,10 +231,7 @@ export default function Fitness() {
             </div>
 
             <input ref={photoInputRef} type="file" accept="image/*" style={{ display: 'none' }}
-              onChange={e => {
-                console.log('File selected:', e.target.files)
-                uploadPhoto(e.target.files[0])
-              }} />
+              onChange={e => uploadPhoto(e.target.files[0])} />
 
             <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
               <button onClick={() => { photoInputRef.current.removeAttribute('capture'); photoInputRef.current.click() }}

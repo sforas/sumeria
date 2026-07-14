@@ -7,12 +7,18 @@ export const Notifs = {
 
   async init() {
     if (!('Notification' in window)) return
-    if (Notification.permission !== 'granted') {
-      await this.requestPermission()
-    }
+    // Only auto-schedules if permission was already granted in a past session —
+    // requestPermission() must be called from a user gesture (see enable()),
+    // browsers block or silently ignore it when called on page load.
     if (Notification.permission === 'granted') {
       this.scheduleToday()
     }
+  },
+
+  async enable() {
+    const granted = await this.requestPermission()
+    if (granted) this.scheduleToday()
+    return granted
   },
 
   scheduleToday() {
@@ -41,8 +47,8 @@ export const Notifs = {
     setTimeout(() => {
       new Notification(title, {
         body,
-        icon: '/icons/icon-192.png',
-        badge: '/icons/icon-192.png',
+        icon: '/favicon.svg',
+        badge: '/favicon.svg',
         vibrate: [200, 100, 200]
       })
     }, delay)

@@ -1,10 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
-
-function today() {
-  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
-}
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
 
 const MOOD_EMOJIS = ['', '😞', '😕', '😐', '😊', '🤩']
 const ENERGY_EMOJIS = ['', '😴', '😕', '😐', '⚡', '🔥']

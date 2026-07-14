@@ -26,6 +26,7 @@ export default function Overview() {
   const [loading, setLoading] = useState(true)
   const [insight, setInsight] = useState('')
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchScores() }, [period])
 
   async function fetchScores() {
@@ -36,11 +37,12 @@ export default function Overview() {
       { data: workouts },
       { data: goals },
       { data: meals },
-      { data: books },
+      { data: _books },
       { data: sessions },
       { data: interactions },
       { data: sleep },
-      { data: medLog }
+      { data: medLog },
+      { data: transactions }
     ] = await Promise.all([
       supabase.from('workouts').select('date').gte('date', from),
       supabase.from('goals').select('done, area').gte('date', from),
@@ -49,7 +51,8 @@ export default function Overview() {
       supabase.from('study_sessions').select('minutes').gte('date', from),
       supabase.from('interactions').select('date').gte('date', from),
       supabase.from('sleep_log').select('sleep_time, wake_time').gte('date', from),
-      supabase.from('med_log').select('taken').gte('date', from)
+      supabase.from('med_log').select('taken').gte('date', from),
+      supabase.from('transactions').select('amount, type').gte('date', from)
     ])
 
     const days = period === 'week' ? 7 : period === 'month' ? 30 : 365
@@ -83,10 +86,12 @@ export default function Overview() {
     const socialTarget = period === 'week' ? 3 : period === 'month' ? 12 : 144
     const socialScore = Math.min(Math.round(socialCount / socialTarget * 100), 100)
 
-    // Health score
-    const takenMeds = medLog?.filter(m => m.taken).length || 0
-    const totalMeds = medLog?.length || 1
-    const medScore = Math.round(takenMeds / totalMeds * 100)
+    // Health score — only averages components that actually have data,
+    // so a period with no medicines/sleep logged isn't silently scored 0.
+    const totalMedLogs = medLog?.length || 0
+    const medScore = totalMedLogs > 0
+      ? Math.round(medLog.filter(m => m.taken).length / totalMedLogs * 100)
+      : null
     const goodSleep = sleep?.filter(s => {
       const [sh, sm] = (s.sleep_time || '00:00').split(':').map(Number)
       const [wh, wm] = (s.wake_time || '00:00').split(':').map(Number)
@@ -94,8 +99,17 @@ export default function Overview() {
       if (mins < 0) mins += 1440
       return mins >= 420
     }).length || 0
-    const sleepScore = sleep?.length > 0 ? Math.round(goodSleep / sleep.length * 100) : 0
-    const healthScore = Math.round((medScore + sleepScore) / 2)
+    const sleepScore = sleep?.length > 0 ? Math.round(goodSleep / sleep.length * 100) : null
+    const healthComponents = [medScore, sleepScore].filter(s => s !== null)
+    const healthScore = healthComponents.length > 0
+      ? Math.round(healthComponents.reduce((a, b) => a + b, 0) / healthComponents.length)
+      : 0
+
+    // Savings score — saved amount vs. the emergency fund goal, prorated to the period
+    const emergencyGoal = 100000
+    const savedInPeriod = transactions?.filter(t => t.type === 'saving').reduce((sum, t) => sum + (t.amount || 0), 0) || 0
+    const savingsTarget = emergencyGoal * (days / 365)
+    const savingsScore = Math.min(Math.round(savedInPeriod / savingsTarget * 100), 100)
 
     const data = [
       { area: 'Fitness', score: fitnessScore, color: '#2DCE9A' },
@@ -105,6 +119,7 @@ export default function Overview() {
       { area: 'Learning', score: learnScore, color: '#4A9EE8' },
       { area: 'Social', score: socialScore, color: '#D46FA0' },
       { area: 'Health', score: healthScore, color: '#E24B7A' },
+      { area: 'Savings', score: savingsScore, color: '#27AE60' },
     ]
 
     setScores(data)

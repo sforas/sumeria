@@ -20,6 +20,7 @@ export default function YearlyReview({ onClose }) {
   const [existingReview, setExistingReview] = useState(null)
   const year = lastYear()
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchStats() }, [])
 
   async function fetchStats() {
@@ -183,7 +184,7 @@ export default function YearlyReview({ onClose }) {
 
   const slides = [
     // SLIDE 0 — Intro
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', textAlign: 'center', padding: '40px 20px' }}>
+    <div key={0} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', textAlign: 'center', padding: '40px 20px' }}>
       <div style={{ fontSize: '64px', marginBottom: '20px' }}>✨</div>
       <div style={{ fontSize: '13px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '10px' }}>Your year in</div>
       <div style={{ fontSize: '42px', fontWeight: 700, letterSpacing: '4px', marginBottom: '8px' }}>SUME<span style={{ color: 'var(--xp)' }}>RIA</span></div>
@@ -194,7 +195,7 @@ export default function YearlyReview({ onClose }) {
     </div>,
 
     // SLIDE 1 — Biggest stat
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', textAlign: 'center', padding: '40px 20px' }}>
+    <div key={1} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', textAlign: 'center', padding: '40px 20px' }}>
       <div style={{ fontSize: '11px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '24px' }}>Your biggest achievement</div>
       <div style={{ fontSize: '80px', marginBottom: '16px' }}>{stats.bigStats?.emoji}</div>
       <div style={{ fontSize: '72px', fontWeight: 800, color: 'var(--xp)', lineHeight: 1, marginBottom: '8px' }}>{stats.bigStats?.value}</div>
@@ -205,7 +206,7 @@ export default function YearlyReview({ onClose }) {
     </div>,
 
     // SLIDE 2 — Fitness
-    <div style={{ padding: '40px 24px', minHeight: '80vh' }}>
+    <div key={2} style={{ padding: '40px 24px', minHeight: '80vh' }}>
       <div style={{ fontSize: '11px', color: 'var(--fit)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px' }}>Fitness</div>
       <div style={{ fontSize: '32px', fontWeight: 700, marginBottom: '32px' }}>You showed up 💪</div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '24px' }}>
@@ -226,7 +227,7 @@ export default function YearlyReview({ onClose }) {
     </div>,
 
     // SLIDE 3 — Mind & Learning
-    <div style={{ padding: '40px 24px', minHeight: '80vh' }}>
+    <div key={3} style={{ padding: '40px 24px', minHeight: '80vh' }}>
       <div style={{ fontSize: '11px', color: 'var(--learn)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px' }}>Mind</div>
       <div style={{ fontSize: '32px', fontWeight: 700, marginBottom: '32px' }}>You kept learning 🧠</div>
       <div style={{ marginBottom: '20px' }}>
@@ -244,7 +245,7 @@ export default function YearlyReview({ onClose }) {
     </div>,
 
     // SLIDE 4 — Work & Social
-    <div style={{ padding: '40px 24px', minHeight: '80vh' }}>
+    <div key={4} style={{ padding: '40px 24px', minHeight: '80vh' }}>
       <div style={{ fontSize: '11px', color: 'var(--work)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px' }}>Work & Social</div>
       <div style={{ fontSize: '32px', fontWeight: 700, marginBottom: '32px' }}>You put yourself out there 💼</div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '24px' }}>
@@ -263,7 +264,7 @@ export default function YearlyReview({ onClose }) {
     </div>,
 
     // SLIDE 5 — Wellbeing
-    <div style={{ padding: '40px 24px', minHeight: '80vh' }}>
+    <div key={5} style={{ padding: '40px 24px', minHeight: '80vh' }}>
       <div style={{ fontSize: '11px', color: 'var(--health)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px' }}>Wellbeing</div>
       <div style={{ fontSize: '32px', fontWeight: 700, marginBottom: '32px' }}>You took care of yourself 💊</div>
       <div style={{ marginBottom: '24px' }}>
@@ -285,7 +286,7 @@ export default function YearlyReview({ onClose }) {
     </div>,
 
     // SLIDE 6 — Wins
-    <div style={{ padding: '40px 24px', minHeight: '80vh' }}>
+    <div key={6} style={{ padding: '40px 24px', minHeight: '80vh' }}>
       <div style={{ fontSize: '11px', color: 'var(--xp)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px' }}>Your wins</div>
       <div style={{ fontSize: '32px', fontWeight: 700, marginBottom: '24px' }}>Moments that mattered 🏆</div>
       {stats.wins.length > 0 ? (
@@ -304,7 +305,7 @@ export default function YearlyReview({ onClose }) {
     </div>,
 
     // SLIDE 7 — Challenge + close
-    <div style={{ padding: '40px 24px', minHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+    <div key={7} style={{ padding: '40px 24px', minHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
       <div style={{ fontSize: '11px', color: 'var(--acc)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px' }}>Looking ahead</div>
       <div style={{ fontSize: '32px', fontWeight: 700, marginBottom: '12px' }}>What's next? 🎯</div>
       <div style={{ fontSize: '14px', color: 'var(--muted2)', marginBottom: '32px', lineHeight: 1.7 }}>
