@@ -25,6 +25,84 @@ function isAlternateDay(startDate) {
   return diff % 2 === 0
 }
 
+function MedForm({ data, setData, onSave, onCancel, title }) {
+  return (
+    <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '13px', marginBottom: '10px' }}>
+      <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '10px' }}>{title}</div>
+      <input placeholder="Medicine name" value={data.name}
+        onChange={e => setData(p => ({ ...p, name: e.target.value }))}
+        style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '8px' }} />
+      <input placeholder="Dose (e.g. 1 tablet)" value={data.dose}
+        onChange={e => setData(p => ({ ...p, dose: e.target.value }))}
+        style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '8px' }} />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
+        <div>
+          <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '4px' }}>Time</div>
+          <input type="time" value={data.time} onChange={e => setData(p => ({ ...p, time: e.target.value }))}
+            style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none' }} />
+        </div>
+        <div>
+          <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '4px' }}>Notify before (min)</div>
+          <input type="number" value={data.notify_before_min} onChange={e => setData(p => ({ ...p, notify_before_min: e.target.value }))}
+            style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none' }} />
+        </div>
+      </div>
+      <div style={{ marginBottom: '8px' }}>
+        <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '4px' }}>Frequency</div>
+        <select value={data.frequency} onChange={e => setData(p => ({ ...p, frequency: e.target.value }))}
+          style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none' }}>
+          <option value="daily">Every day</option>
+          <option value="alternate">Every other day</option>
+        </select>
+      </div>
+      {data.frequency === 'alternate' && (
+        <div style={{ marginBottom: '8px' }}>
+          <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '4px' }}>First day taken</div>
+          <input type="date" value={data.alternate_start || ''} onChange={e => setData(p => ({ ...p, alternate_start: e.target.value }))}
+            style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none' }} />
+        </div>
+      )}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+        <input type="checkbox" id="wf" checked={data.with_food} onChange={e => setData(p => ({ ...p, with_food: e.target.checked }))} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
+        <label htmlFor="wf" style={{ fontSize: '13px', cursor: 'pointer' }}>Take with food</label>
+      </div>
+      <div style={{ display: 'flex', gap: '7px' }}>
+        <button onClick={onSave} style={{ flex: 1, background: 'var(--health)', border: 'none', borderRadius: '7px', color: '#fff', fontSize: '13px', padding: '9px', cursor: 'pointer', fontWeight: 500 }}>Save</button>
+        <button onClick={onCancel} style={{ background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--muted)', fontSize: '13px', padding: '9px 14px', cursor: 'pointer' }}>Cancel</button>
+      </div>
+    </div>
+  )
+}
+
+function SleepForm({ data, setData, onSave, onCancel, title }) {
+  return (
+    <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '13px', marginTop: '6px' }}>
+      <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '10px' }}>{title}</div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '10px' }}>
+        <div>
+          <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '4px' }}>Went to sleep</div>
+          <input type="time" value={data.sleep_time} onChange={e => setData(p => ({ ...p, sleep_time: e.target.value }))}
+            style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none' }} />
+        </div>
+        <div>
+          <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '4px' }}>Woke up</div>
+          <input type="time" value={data.wake_time} onChange={e => setData(p => ({ ...p, wake_time: e.target.value }))}
+            style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none' }} />
+        </div>
+      </div>
+      {data.sleep_time && data.wake_time && (
+        <div style={{ fontSize: '13px', color: 'var(--fit)', marginBottom: '10px', textAlign: 'center' }}>
+          Duration: {calcDuration(data.sleep_time, data.wake_time)?.label}
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: '7px' }}>
+        <button onClick={onSave} style={{ flex: 1, background: 'var(--health)', border: 'none', borderRadius: '7px', color: '#fff', fontSize: '13px', padding: '9px', cursor: 'pointer', fontWeight: 500 }}>Save</button>
+        <button onClick={onCancel} style={{ background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--muted)', fontSize: '13px', padding: '9px 14px', cursor: 'pointer' }}>Cancel</button>
+      </div>
+    </div>
+  )
+}
+
 export default function Healthcare() {
   const [view, setView] = useState('day')
   const [notifPerm, setNotifPerm] = useState(typeof Notification !== 'undefined' ? Notification.permission : 'denied')
@@ -156,84 +234,6 @@ async function requestNotifs() {
         return sum + (dur?.total || 0)
       }, 0) / weekSleep.length
     : 0
-
-  function MedForm({ data, setData, onSave, onCancel, title }) {
-    return (
-      <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '13px', marginBottom: '10px' }}>
-        <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '10px' }}>{title}</div>
-        <input placeholder="Medicine name" value={data.name}
-          onChange={e => setData(p => ({ ...p, name: e.target.value }))}
-          style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '8px' }} />
-        <input placeholder="Dose (e.g. 1 tablet)" value={data.dose}
-          onChange={e => setData(p => ({ ...p, dose: e.target.value }))}
-          style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '8px' }} />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
-          <div>
-            <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '4px' }}>Time</div>
-            <input type="time" value={data.time} onChange={e => setData(p => ({ ...p, time: e.target.value }))}
-              style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none' }} />
-          </div>
-          <div>
-            <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '4px' }}>Notify before (min)</div>
-            <input type="number" value={data.notify_before_min} onChange={e => setData(p => ({ ...p, notify_before_min: e.target.value }))}
-              style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none' }} />
-          </div>
-        </div>
-        <div style={{ marginBottom: '8px' }}>
-          <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '4px' }}>Frequency</div>
-          <select value={data.frequency} onChange={e => setData(p => ({ ...p, frequency: e.target.value }))}
-            style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none' }}>
-            <option value="daily">Every day</option>
-            <option value="alternate">Every other day</option>
-          </select>
-        </div>
-        {data.frequency === 'alternate' && (
-          <div style={{ marginBottom: '8px' }}>
-            <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '4px' }}>First day taken</div>
-            <input type="date" value={data.alternate_start || ''} onChange={e => setData(p => ({ ...p, alternate_start: e.target.value }))}
-              style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none' }} />
-          </div>
-        )}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-          <input type="checkbox" id="wf" checked={data.with_food} onChange={e => setData(p => ({ ...p, with_food: e.target.checked }))} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
-          <label htmlFor="wf" style={{ fontSize: '13px', cursor: 'pointer' }}>Take with food</label>
-        </div>
-        <div style={{ display: 'flex', gap: '7px' }}>
-          <button onClick={onSave} style={{ flex: 1, background: 'var(--health)', border: 'none', borderRadius: '7px', color: '#fff', fontSize: '13px', padding: '9px', cursor: 'pointer', fontWeight: 500 }}>Save</button>
-          <button onClick={onCancel} style={{ background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--muted)', fontSize: '13px', padding: '9px 14px', cursor: 'pointer' }}>Cancel</button>
-        </div>
-      </div>
-    )
-  }
-
-  function SleepForm({ data, setData, onSave, onCancel, title }) {
-    return (
-      <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '13px', marginTop: '6px' }}>
-        <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '10px' }}>{title}</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '10px' }}>
-          <div>
-            <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '4px' }}>Went to sleep</div>
-            <input type="time" value={data.sleep_time} onChange={e => setData(p => ({ ...p, sleep_time: e.target.value }))}
-              style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none' }} />
-          </div>
-          <div>
-            <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '4px' }}>Woke up</div>
-            <input type="time" value={data.wake_time} onChange={e => setData(p => ({ ...p, wake_time: e.target.value }))}
-              style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none' }} />
-          </div>
-        </div>
-        {data.sleep_time && data.wake_time && (
-          <div style={{ fontSize: '13px', color: 'var(--fit)', marginBottom: '10px', textAlign: 'center' }}>
-            Duration: {calcDuration(data.sleep_time, data.wake_time)?.label}
-          </div>
-        )}
-        <div style={{ display: 'flex', gap: '7px' }}>
-          <button onClick={onSave} style={{ flex: 1, background: 'var(--health)', border: 'none', borderRadius: '7px', color: '#fff', fontSize: '13px', padding: '9px', cursor: 'pointer', fontWeight: 500 }}>Save</button>
-          <button onClick={onCancel} style={{ background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--muted)', fontSize: '13px', padding: '9px 14px', cursor: 'pointer' }}>Cancel</button>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div style={{ padding: '16px', paddingBottom: '24px' }}>

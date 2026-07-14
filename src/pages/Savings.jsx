@@ -5,6 +5,28 @@ function today() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
 }
 
+function TxForm({ data, setData, onSave, onCancel, title }) {
+  return (
+    <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '13px', marginBottom: '8px' }}>
+      <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '10px' }}>{title}</div>
+      <input placeholder="Description" value={data.description} onChange={e => setData(p => ({ ...p, description: e.target.value }))}
+        style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '8px' }} />
+      <input placeholder="Amount (MXN)" type="number" value={data.amount} onChange={e => setData(p => ({ ...p, amount: e.target.value }))}
+        style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '8px' }} />
+      <select value={data.type} onChange={e => setData(p => ({ ...p, type: e.target.value }))}
+        style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '10px' }}>
+        <option value="saving">Saving</option>
+        <option value="income">Income</option>
+        <option value="expense">Expense</option>
+      </select>
+      <div style={{ display: 'flex', gap: '7px' }}>
+        <button onClick={onSave} style={{ flex: 1, background: 'var(--savings)', border: 'none', borderRadius: '7px', color: '#fff', fontSize: '13px', padding: '9px', cursor: 'pointer', fontWeight: 500 }}>Save</button>
+        <button onClick={onCancel} style={{ background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--muted)', fontSize: '13px', padding: '9px 14px', cursor: 'pointer' }}>Cancel</button>
+      </div>
+    </div>
+  )
+}
+
 export default function Savings() {
   const [view, setView] = useState('month')
   const [transactions, setTransactions] = useState([])
@@ -64,27 +86,6 @@ export default function Savings() {
   function txColor(type) { return type === 'expense' ? 'var(--diet)' : 'var(--savings)' }
   function formatMXN(amount) { return `$${Math.abs(amount).toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} MXN` }
 
-  function TxForm({ data, setData, onSave, onCancel, title }) {
-    return (
-      <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '13px', marginBottom: '8px' }}>
-        <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '10px' }}>{title}</div>
-        <input placeholder="Description" value={data.description} onChange={e => setData(p => ({ ...p, description: e.target.value }))}
-          style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '8px' }} />
-        <input placeholder="Amount (MXN)" type="number" value={data.amount} onChange={e => setData(p => ({ ...p, amount: e.target.value }))}
-          style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '8px' }} />
-        <select value={data.type} onChange={e => setData(p => ({ ...p, type: e.target.value }))}
-          style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '10px' }}>
-          <option value="saving">Saving</option>
-          <option value="income">Income</option>
-          <option value="expense">Expense</option>
-        </select>
-        <div style={{ display: 'flex', gap: '7px' }}>
-          <button onClick={onSave} style={{ flex: 1, background: 'var(--savings)', border: 'none', borderRadius: '7px', color: '#fff', fontSize: '13px', padding: '9px', cursor: 'pointer', fontWeight: 500 }}>Save</button>
-          <button onClick={onCancel} style={{ background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--muted)', fontSize: '13px', padding: '9px 14px', cursor: 'pointer' }}>Cancel</button>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div style={{ padding: '16px', paddingBottom: '24px' }}>

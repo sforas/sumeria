@@ -5,6 +5,30 @@ function today() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
 }
 
+function BookEditForm({ data, setData, onSave, onCancel }) {
+  return (
+    <div style={{ padding: '4px 0' }}>
+      <input placeholder="Title" value={data.title} onChange={e => setData(p => ({ ...p, title: e.target.value }))}
+        style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '8px' }} />
+      <input placeholder="Author" value={data.author} onChange={e => setData(p => ({ ...p, author: e.target.value }))}
+        style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '8px' }} />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '10px' }}>
+        <input placeholder="Total pages" type="number" value={data.total_pages} onChange={e => setData(p => ({ ...p, total_pages: e.target.value }))}
+          style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none' }} />
+        <select value={data.format} onChange={e => setData(p => ({ ...p, format: e.target.value }))}
+          style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none' }}>
+          <option value="physical">Physical</option>
+          <option value="kindle">Kindle</option>
+        </select>
+      </div>
+      <div style={{ display: 'flex', gap: '7px' }}>
+        <button onClick={onSave} style={{ flex: 1, background: 'var(--read)', border: 'none', borderRadius: '7px', color: '#000', fontSize: '13px', padding: '9px', cursor: 'pointer', fontWeight: 500 }}>Save</button>
+        <button onClick={onCancel} style={{ background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--muted)', fontSize: '13px', padding: '9px 14px', cursor: 'pointer' }}>Cancel</button>
+      </div>
+    </div>
+  )
+}
+
 export default function Reading() {
   const [view, setView] = useState('day')
   const [books, setBooks] = useState([])
@@ -66,29 +90,6 @@ export default function Reading() {
   const totalPagesRead = books.reduce((sum, b) => sum + (b.pages_read || 0), 0)
   const views = ['day', 'week', 'month', 'ytd']
 
-  function BookEditForm() {
-    return (
-      <div style={{ padding: '4px 0' }}>
-        <input placeholder="Title" value={editBook.title} onChange={e => setEditBook(p => ({ ...p, title: e.target.value }))}
-          style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '8px' }} />
-        <input placeholder="Author" value={editBook.author} onChange={e => setEditBook(p => ({ ...p, author: e.target.value }))}
-          style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '8px' }} />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '10px' }}>
-          <input placeholder="Total pages" type="number" value={editBook.total_pages} onChange={e => setEditBook(p => ({ ...p, total_pages: e.target.value }))}
-            style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none' }} />
-          <select value={editBook.format} onChange={e => setEditBook(p => ({ ...p, format: e.target.value }))}
-            style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none' }}>
-            <option value="physical">Physical</option>
-            <option value="kindle">Kindle</option>
-          </select>
-        </div>
-        <div style={{ display: 'flex', gap: '7px' }}>
-          <button onClick={saveBook} style={{ flex: 1, background: 'var(--read)', border: 'none', borderRadius: '7px', color: '#000', fontSize: '13px', padding: '9px', cursor: 'pointer', fontWeight: 500 }}>Save</button>
-          <button onClick={() => setEditBook(null)} style={{ background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--muted)', fontSize: '13px', padding: '9px 14px', cursor: 'pointer' }}>Cancel</button>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div style={{ padding: '16px', paddingBottom: '24px' }}>
@@ -118,7 +119,7 @@ export default function Reading() {
           {reading.map(book => (
             <div key={book.id} style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '12px 13px', marginBottom: '8px' }}>
               {editBook?.id === book.id ? (
-                <BookEditForm />
+                <BookEditForm data={editBook} setData={setEditBook} onSave={saveBook} onCancel={() => setEditBook(null)} />
               ) : (
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
                   <div style={{ width: '36px', height: '48px', borderRadius: '4px', background: 'var(--surf3)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>📖</div>

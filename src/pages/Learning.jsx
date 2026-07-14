@@ -5,6 +5,67 @@ function today() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
 }
 
+function CourseForm({ data, setData, onSave, onCancel, title }) {
+  return (
+    <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '13px', marginBottom: '8px' }}>
+      <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '10px' }}>{title}</div>
+      <input placeholder="Course title" value={data.title} onChange={e => setData(p => ({ ...p, title: e.target.value }))}
+        style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '8px' }} />
+      <input placeholder="Platform (Udemy, Coursera...)" value={data.platform} onChange={e => setData(p => ({ ...p, platform: e.target.value }))}
+        style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '8px' }} />
+      <input placeholder="Total modules" type="number" value={data.total_modules} onChange={e => setData(p => ({ ...p, total_modules: e.target.value }))}
+        style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '10px' }} />
+      <div style={{ display: 'flex', gap: '7px' }}>
+        <button onClick={onSave} style={{ flex: 1, background: 'var(--learn)', border: 'none', borderRadius: '7px', color: '#fff', fontSize: '13px', padding: '9px', cursor: 'pointer', fontWeight: 500 }}>Save</button>
+        <button onClick={onCancel} style={{ background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--muted)', fontSize: '13px', padding: '9px 14px', cursor: 'pointer' }}>Cancel</button>
+      </div>
+    </div>
+  )
+}
+
+function CourseCard({ course, editCourse, setEditCourse, onSaveEdit, onDelete, onUpdateStatus, onStartSession }) {
+  const pct = course.total_modules > 0 ? Math.round((course.modules_done || 0) / course.total_modules * 100) : 0
+  return (
+    <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '12px 13px', marginBottom: '8px' }}>
+      {editCourse?.id === course.id ? (
+        <CourseForm data={editCourse} setData={setEditCourse} onSave={onSaveEdit} onCancel={() => setEditCourse(null)} title="Edit course" />
+      ) : (
+        <>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '6px' }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '1px' }}>{course.title}</div>
+              <div style={{ fontSize: '11px', color: 'var(--muted2)' }}>{course.platform} · Module {course.modules_done || 0}/{course.total_modules}</div>
+            </div>
+            <div style={{ display: 'flex', gap: '4px' }}>
+              <button onClick={() => setEditCourse({ ...course })} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '14px' }}>✏️</button>
+              <button onClick={() => onDelete(course.id)} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '16px' }}>×</button>
+            </div>
+          </div>
+          <div style={{ fontSize: '11px', color: 'var(--muted2)', marginBottom: '4px' }}>{pct}% complete</div>
+          <div style={{ height: '3px', background: 'var(--surf3)', borderRadius: '2px', overflow: 'hidden', marginBottom: '10px' }}>
+            <div style={{ width: `${pct}%`, height: '100%', background: 'var(--learn)', borderRadius: '2px' }} />
+          </div>
+          <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
+            {['active', 'paused', 'finished'].map(s => (
+              <button key={s} onClick={() => onUpdateStatus(course.id, s)} style={{
+                padding: '2px 8px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer',
+                border: '0.5px solid var(--border)',
+                background: course.status === s ? 'var(--learn)' : 'var(--surf3)',
+                color: course.status === s ? '#fff' : 'var(--muted)',
+                fontWeight: course.status === s ? 500 : 400, textTransform: 'capitalize'
+              }}>{s}</button>
+            ))}
+          </div>
+          <button onClick={() => onStartSession(course)}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', width: '100%', padding: '7px', background: 'none', border: '0.5px dashed var(--border)', borderRadius: '7px', color: 'var(--muted)', cursor: 'pointer', fontSize: '11px' }}>
+            + Log study session
+          </button>
+        </>
+      )}
+    </div>
+  )
+}
+
 export default function Learning() {
   const [view, setView] = useState('day')
   const [courses, setCourses] = useState([])
@@ -101,67 +162,6 @@ export default function Learning() {
   const totalMinutes = sessions.reduce((sum, s) => sum + (s.minutes || 0), 0)
   const views = ['day', 'week', 'month', 'ytd']
 
-  function CourseForm({ data, setData, onSave, onCancel, title }) {
-    return (
-      <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '13px', marginBottom: '8px' }}>
-        <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '10px' }}>{title}</div>
-        <input placeholder="Course title" value={data.title} onChange={e => setData(p => ({ ...p, title: e.target.value }))}
-          style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '8px' }} />
-        <input placeholder="Platform (Udemy, Coursera...)" value={data.platform} onChange={e => setData(p => ({ ...p, platform: e.target.value }))}
-          style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '8px' }} />
-        <input placeholder="Total modules" type="number" value={data.total_modules} onChange={e => setData(p => ({ ...p, total_modules: e.target.value }))}
-          style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '10px' }} />
-        <div style={{ display: 'flex', gap: '7px' }}>
-          <button onClick={onSave} style={{ flex: 1, background: 'var(--learn)', border: 'none', borderRadius: '7px', color: '#fff', fontSize: '13px', padding: '9px', cursor: 'pointer', fontWeight: 500 }}>Save</button>
-          <button onClick={onCancel} style={{ background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--muted)', fontSize: '13px', padding: '9px 14px', cursor: 'pointer' }}>Cancel</button>
-        </div>
-      </div>
-    )
-  }
-
-  function CourseCard({ course }) {
-    const pct = course.total_modules > 0 ? Math.round((course.modules_done || 0) / course.total_modules * 100) : 0
-    return (
-      <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '12px 13px', marginBottom: '8px' }}>
-        {editCourse?.id === course.id ? (
-          <CourseForm data={editCourse} setData={setEditCourse} onSave={saveCourse} onCancel={() => setEditCourse(null)} title="Edit course" />
-        ) : (
-          <>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '6px' }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '1px' }}>{course.title}</div>
-                <div style={{ fontSize: '11px', color: 'var(--muted2)' }}>{course.platform} · Module {course.modules_done || 0}/{course.total_modules}</div>
-              </div>
-              <div style={{ display: 'flex', gap: '4px' }}>
-                <button onClick={() => setEditCourse({ ...course })} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '14px' }}>✏️</button>
-                <button onClick={() => deleteCourse(course.id)} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '16px' }}>×</button>
-              </div>
-            </div>
-            <div style={{ fontSize: '11px', color: 'var(--muted2)', marginBottom: '4px' }}>{pct}% complete</div>
-            <div style={{ height: '3px', background: 'var(--surf3)', borderRadius: '2px', overflow: 'hidden', marginBottom: '10px' }}>
-              <div style={{ width: `${pct}%`, height: '100%', background: 'var(--learn)', borderRadius: '2px' }} />
-            </div>
-            <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
-              {['active', 'paused', 'finished'].map(s => (
-                <button key={s} onClick={() => updateCourseStatus(course.id, s)} style={{
-                  padding: '2px 8px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer',
-                  border: '0.5px solid var(--border)',
-                  background: course.status === s ? 'var(--learn)' : 'var(--surf3)',
-                  color: course.status === s ? '#fff' : 'var(--muted)',
-                  fontWeight: course.status === s ? 500 : 400, textTransform: 'capitalize'
-                }}>{s}</button>
-              ))}
-            </div>
-            <button onClick={() => { setSessionCourse(course); setSessionData({ minutes: '', module_number: '', notes: '' }) }}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', width: '100%', padding: '7px', background: 'none', border: '0.5px dashed var(--border)', borderRadius: '7px', color: 'var(--muted)', cursor: 'pointer', fontSize: '11px' }}>
-              + Log study session
-            </button>
-          </>
-        )}
-      </div>
-    )
-  }
-
   return (
     <div style={{ padding: '16px', paddingBottom: '24px' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '14px' }}>
@@ -185,13 +185,21 @@ export default function Learning() {
           {active.length > 0 && (
             <>
               <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '8px' }}>Active courses</div>
-              {active.map(c => <CourseCard key={c.id} course={c} />)}
+              {active.map(c => (
+                <CourseCard key={c.id} course={c} editCourse={editCourse} setEditCourse={setEditCourse}
+                  onSaveEdit={saveCourse} onDelete={deleteCourse} onUpdateStatus={updateCourseStatus}
+                  onStartSession={c => { setSessionCourse(c); setSessionData({ minutes: '', module_number: '', notes: '' }) }} />
+              ))}
             </>
           )}
           {paused.length > 0 && (
             <>
               <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px', margin: '12px 0 8px' }}>Paused</div>
-              {paused.map(c => <CourseCard key={c.id} course={c} />)}
+              {paused.map(c => (
+                <CourseCard key={c.id} course={c} editCourse={editCourse} setEditCourse={setEditCourse}
+                  onSaveEdit={saveCourse} onDelete={deleteCourse} onUpdateStatus={updateCourseStatus}
+                  onStartSession={c => { setSessionCourse(c); setSessionData({ minutes: '', module_number: '', notes: '' }) }} />
+              ))}
             </>
           )}
           {finished.length > 0 && (

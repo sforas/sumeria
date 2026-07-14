@@ -12,6 +12,28 @@ function today() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
 }
 
+function AppForm({ data, setData, onSave, onCancel, title }) {
+  return (
+    <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '13px', marginBottom: '8px' }}>
+      <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '10px' }}>{title}</div>
+      <input placeholder="Company" value={data.company} onChange={e => setData(p => ({ ...p, company: e.target.value }))}
+        style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '8px' }} />
+      <input placeholder="Role" value={data.role} onChange={e => setData(p => ({ ...p, role: e.target.value }))}
+        style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '8px' }} />
+      <select value={data.status} onChange={e => setData(p => ({ ...p, status: e.target.value }))}
+        style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '8px' }}>
+        {STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+      </select>
+      <input placeholder="Notes (optional)" value={data.notes} onChange={e => setData(p => ({ ...p, notes: e.target.value }))}
+        style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '10px' }} />
+      <div style={{ display: 'flex', gap: '7px' }}>
+        <button onClick={onSave} style={{ flex: 1, background: 'var(--work)', border: 'none', borderRadius: '7px', color: '#fff', fontSize: '13px', padding: '9px', cursor: 'pointer', fontWeight: 500 }}>Save</button>
+        <button onClick={onCancel} style={{ background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--muted)', fontSize: '13px', padding: '9px 14px', cursor: 'pointer' }}>Cancel</button>
+      </div>
+    </div>
+  )
+}
+
 export default function Work() {
   const [view, setView] = useState('day')
   const [applications, setApplications] = useState([])
@@ -67,27 +89,6 @@ export default function Work() {
   const offers = applications.filter(a => a.status === 'offer')
   const views = ['day', 'week', 'month', 'ytd']
 
-  function AppForm({ data, setData, onSave, onCancel, title }) {
-    return (
-      <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '13px', marginBottom: '8px' }}>
-        <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '10px' }}>{title}</div>
-        <input placeholder="Company" value={data.company} onChange={e => setData(p => ({ ...p, company: e.target.value }))}
-          style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '8px' }} />
-        <input placeholder="Role" value={data.role} onChange={e => setData(p => ({ ...p, role: e.target.value }))}
-          style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '8px' }} />
-        <select value={data.status} onChange={e => setData(p => ({ ...p, status: e.target.value }))}
-          style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '8px' }}>
-          {STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-        </select>
-        <input placeholder="Notes (optional)" value={data.notes} onChange={e => setData(p => ({ ...p, notes: e.target.value }))}
-          style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '10px' }} />
-        <div style={{ display: 'flex', gap: '7px' }}>
-          <button onClick={onSave} style={{ flex: 1, background: 'var(--work)', border: 'none', borderRadius: '7px', color: '#fff', fontSize: '13px', padding: '9px', cursor: 'pointer', fontWeight: 500 }}>Save</button>
-          <button onClick={onCancel} style={{ background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--muted)', fontSize: '13px', padding: '9px 14px', cursor: 'pointer' }}>Cancel</button>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div style={{ padding: '16px', paddingBottom: '24px' }}>

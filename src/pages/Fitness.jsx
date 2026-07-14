@@ -7,6 +7,47 @@ function today() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
 }
 
+function WorkoutForm({ data, setData, onSave, onCancel, title }) {
+  return (
+    <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '13px', marginBottom: '8px' }}>
+      <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '10px' }}>{title}</div>
+      <select value={data.type} onChange={e => setData(p => ({ ...p, type: e.target.value }))}
+        style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '8px' }}>
+        {WORKOUT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+      </select>
+      <input placeholder="Duration (minutes)" type="number" value={data.duration_min}
+        onChange={e => setData(p => ({ ...p, duration_min: e.target.value }))}
+        style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '8px' }} />
+      <input placeholder="Notes (optional)" value={data.notes}
+        onChange={e => setData(p => ({ ...p, notes: e.target.value }))}
+        style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '10px' }} />
+      <div style={{ display: 'flex', gap: '7px' }}>
+        <button onClick={onSave} style={{ flex: 1, background: 'var(--fit)', border: 'none', borderRadius: '7px', color: '#000', fontSize: '13px', padding: '9px', cursor: 'pointer', fontWeight: 500 }}>Save</button>
+        <button onClick={onCancel} style={{ background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--muted)', fontSize: '13px', padding: '9px 14px', cursor: 'pointer' }}>Cancel</button>
+      </div>
+    </div>
+  )
+}
+
+function PRChart({ data, color, label }) {
+  if (!data.length) return null
+  const max = Math.max(...data.map(d => d.reps))
+  return (
+    <div style={{ marginBottom: '16px' }}>
+      <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '8px' }}>{label}</div>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height: '60px' }}>
+        {data.map((d, i) => (
+          <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+            <div style={{ fontSize: '9px', color: color }}>{d.reps}</div>
+            <div style={{ width: '100%', background: color, borderRadius: '3px 3px 0 0', height: `${(d.reps / max) * 44}px`, opacity: i === data.length - 1 ? 1 : 0.5, transition: 'height .3s' }} />
+            <div style={{ fontSize: '8px', color: 'var(--muted)' }}>{d.date?.slice(5)}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function Fitness() {
   const [view, setView] = useState('day')
   const [workouts, setWorkouts] = useState([])
@@ -157,47 +198,6 @@ export default function Fitness() {
   const pullupHistory = prs.filter(p => p.exercise === 'Pull-ups').slice(0, 8).reverse()
 
   const views = ['day', 'week', 'month', 'ytd']
-
-  function WorkoutForm({ data, setData, onSave, onCancel, title }) {
-    return (
-      <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '13px', marginBottom: '8px' }}>
-        <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '10px' }}>{title}</div>
-        <select value={data.type} onChange={e => setData(p => ({ ...p, type: e.target.value }))}
-          style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '8px' }}>
-          {WORKOUT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-        </select>
-        <input placeholder="Duration (minutes)" type="number" value={data.duration_min}
-          onChange={e => setData(p => ({ ...p, duration_min: e.target.value }))}
-          style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '8px' }} />
-        <input placeholder="Notes (optional)" value={data.notes}
-          onChange={e => setData(p => ({ ...p, notes: e.target.value }))}
-          style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '10px' }} />
-        <div style={{ display: 'flex', gap: '7px' }}>
-          <button onClick={onSave} style={{ flex: 1, background: 'var(--fit)', border: 'none', borderRadius: '7px', color: '#000', fontSize: '13px', padding: '9px', cursor: 'pointer', fontWeight: 500 }}>Save</button>
-          <button onClick={onCancel} style={{ background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--muted)', fontSize: '13px', padding: '9px 14px', cursor: 'pointer' }}>Cancel</button>
-        </div>
-      </div>
-    )
-  }
-
-  function PRChart({ data, color, label }) {
-    if (!data.length) return null
-    const max = Math.max(...data.map(d => d.reps))
-    return (
-      <div style={{ marginBottom: '16px' }}>
-        <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '8px' }}>{label}</div>
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height: '60px' }}>
-          {data.map((d, i) => (
-            <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
-              <div style={{ fontSize: '9px', color: color }}>{d.reps}</div>
-              <div style={{ width: '100%', background: color, borderRadius: '3px 3px 0 0', height: `${(d.reps / max) * 44}px`, opacity: i === data.length - 1 ? 1 : 0.5, transition: 'height .3s' }} />
-              <div style={{ fontSize: '8px', color: 'var(--muted)' }}>{d.date?.slice(5)}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div style={{ padding: '16px', paddingBottom: '24px' }}>
