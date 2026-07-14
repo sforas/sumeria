@@ -13,6 +13,10 @@ export default function Fitness() {
   const [weightLog, setWeightLog] = useState([])
   const [photos, setPhotos] = useState([])
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const [showCompare, setShowCompare] = useState(false)
+  const [compareA, setCompareA] = useState(null)
+  const [compareB, setCompareB] = useState(null)
+  const [pickerSlot, setPickerSlot] = useState(null)
   const [loading, setLoading] = useState(true)
   const [showAddWorkout, setShowAddWorkout] = useState(false)
   const [showAddWeight, setShowAddWeight] = useState(false)
@@ -120,6 +124,19 @@ export default function Fitness() {
   async function deletePhoto(name) {
     await supabase.storage.from('progress-photos').remove([name])
     setPhotos(prev => prev.filter(p => p.name !== name))
+  }
+
+  function toggleCompare() {
+    setShowCompare(v => !v)
+    setCompareA(null)
+    setCompareB(null)
+    setPickerSlot(null)
+  }
+
+  function selectForSlot(photo) {
+    if (pickerSlot === 'A') setCompareA(photo)
+    if (pickerSlot === 'B') setCompareB(photo)
+    setPickerSlot(null)
   }
 
   const thisWeekWorkouts = workouts.filter(w => {
@@ -261,6 +278,82 @@ export default function Fitness() {
               </div>
             )}
           </div>
+
+          {/* Photo comparison */}
+          {photos.length >= 2 && (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px' }}>Compare progress</div>
+                <button onClick={toggleCompare} style={{
+                  background: showCompare ? 'var(--fit)' : 'var(--surf3)',
+                  border: '0.5px solid var(--border)', borderRadius: '6px',
+                  color: showCompare ? '#000' : 'var(--text)', fontSize: '11px',
+                  padding: '5px 10px', cursor: 'pointer', fontWeight: 500
+                }}>{showCompare ? 'Close' : '📊 Compare'}</button>
+              </div>
+
+              {showCompare && (
+                <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '12px 13px', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                    {[{ slot: 'A', label: 'Before', photo: compareA }, { slot: 'B', label: 'After', photo: compareB }].map(s => (
+                      <div key={s.slot} onClick={() => setPickerSlot(s.slot)} style={{
+                        flex: 1, aspectRatio: '3/4', maxHeight: '140px', borderRadius: '8px',
+                        background: 'var(--surf3)', cursor: 'pointer', overflow: 'hidden',
+                        border: pickerSlot === s.slot ? '1.5px solid var(--fit)' : '0.5px dashed var(--border)',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative'
+                      }}>
+                        {s.photo ? (
+                          <>
+                            <img src={s.photo.url} alt={s.photo.date} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,.6)', color: '#fff', fontSize: '10px', padding: '3px', textAlign: 'center' }}>{s.photo.date}</div>
+                          </>
+                        ) : (
+                          <>
+                            <div style={{ fontSize: '20px', marginBottom: '4px', color: 'var(--muted)' }}>+</div>
+                            <div style={{ fontSize: '10px', color: 'var(--muted)' }}>{s.label}</div>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {pickerSlot && (
+                    <div style={{ marginBottom: '10px' }}>
+                      <div style={{ fontSize: '10px', color: 'var(--muted)', marginBottom: '6px' }}>Select a photo for {pickerSlot === 'A' ? 'Before' : 'After'}</div>
+                      <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px' }}>
+                        {photos.map((p, i) => {
+                          const otherPhoto = pickerSlot === 'A' ? compareB : compareA
+                          const disabled = otherPhoto?.name === p.name
+                          return (
+                            <img key={i} src={p.url} alt={p.date} onClick={() => !disabled && selectForSlot(p)}
+                              style={{
+                                width: '48px', height: '64px', objectFit: 'cover', borderRadius: '5px', flexShrink: 0,
+                                border: '0.5px solid var(--border)', cursor: disabled ? 'not-allowed' : 'pointer',
+                                opacity: disabled ? .35 : 1
+                              }} />
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {compareA && compareB && (
+                    <div>
+                      <div style={{ fontSize: '10px', color: 'var(--muted)', marginBottom: '8px' }}>Comparison</div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        {[compareA, compareB].map((p, i) => (
+                          <div key={i} style={{ flex: 1, textAlign: 'center' }}>
+                            <img src={p.url} alt={p.date} style={{ width: '100%', aspectRatio: '3/4', objectFit: 'cover', borderRadius: '8px', border: '0.5px solid var(--fit)', display: 'block' }} />
+                            <div style={{ fontSize: '11px', color: 'var(--muted2)', marginTop: '5px' }}>{p.date}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
 
           {/* Recent sessions */}
           <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '8px' }}>Recent sessions</div>

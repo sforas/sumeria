@@ -15,6 +15,7 @@ export default function Learning() {
   const [newCourse, setNewCourse] = useState({ title: '', platform: '', total_modules: '' })
   const [sessionCourse, setSessionCourse] = useState(null)
   const [sessionData, setSessionData] = useState({ minutes: '', module_number: '', notes: '' })
+  const [scheduleCourse, setScheduleCourse] = useState(null)
 
   useEffect(() => { fetchData() }, [])
 
@@ -33,9 +34,26 @@ export default function Learning() {
     const { data } = await supabase.from('courses').insert({
       ...newCourse, total_modules: parseInt(newCourse.total_modules) || 0, modules_done: 0, status: 'active'
     }).select().single()
-    if (data) setCourses(prev => [data, ...prev])
+    if (data) {
+      setCourses(prev => [data, ...prev])
+      setScheduleCourse(data)
+    }
     setNewCourse({ title: '', platform: '', total_modules: '' })
     setShowAddCourse(false)
+  }
+
+  async function addToSchedule(frequency) {
+    if (!scheduleCourse) return
+    const daysOfWeek = {
+      daily: '0,1,2,3,4,5,6',
+      weekdays: '1,2,3,4,5',
+      alternate: '0,2,4,6'
+    }[frequency]
+    await supabase.from('routines').insert({
+      title: scheduleCourse.title, area: 'learning',
+      days_of_week: daysOfWeek, quick_log_type: 'learning', active: true
+    })
+    setScheduleCourse(null)
   }
 
   async function saveCourse() {
@@ -274,6 +292,21 @@ export default function Learning() {
               <button onClick={logSession} style={{ flex: 1, background: 'var(--learn)', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '13px', padding: '11px', cursor: 'pointer', fontWeight: 500 }}>Save session</button>
               <button onClick={() => setSessionCourse(null)} style={{ background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '8px', color: 'var(--muted)', fontSize: '13px', padding: '11px 16px', cursor: 'pointer' }}>Cancel</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {scheduleCourse && (
+        <div onClick={() => setScheduleCourse(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.7)', display: 'flex', alignItems: 'flex-end', zIndex: 100 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--surf)', borderRadius: '14px 14px 0 0', padding: '20px 18px 36px', width: '100%' }}>
+            <div style={{ fontSize: '14px', fontWeight: 500, marginBottom: '4px' }}>Add this course to your daily Home schedule?</div>
+            <div style={{ fontSize: '12px', color: 'var(--muted2)', marginBottom: '16px' }}>"{scheduleCourse.title}" will show up as a routine on Home, with the timer built in.</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '10px' }}>
+              <button onClick={() => addToSchedule('daily')} style={{ width: '100%', textAlign: 'left', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '8px', color: 'var(--text)', fontSize: '13px', padding: '11px 13px', cursor: 'pointer' }}>Every day</button>
+              <button onClick={() => addToSchedule('weekdays')} style={{ width: '100%', textAlign: 'left', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '8px', color: 'var(--text)', fontSize: '13px', padding: '11px 13px', cursor: 'pointer' }}>Weekdays only (Mon–Fri)</button>
+              <button onClick={() => addToSchedule('alternate')} style={{ width: '100%', textAlign: 'left', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '8px', color: 'var(--text)', fontSize: '13px', padding: '11px 13px', cursor: 'pointer' }}>Every other day</button>
+            </div>
+            <button onClick={() => setScheduleCourse(null)} style={{ width: '100%', background: 'none', border: 'none', color: 'var(--muted)', fontSize: '13px', padding: '8px', cursor: 'pointer' }}>Skip</button>
           </div>
         </div>
       )}

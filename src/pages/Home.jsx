@@ -73,6 +73,7 @@ export default function Home() {
   const [modal, setModal] = useState(null)
   const [quickLog, setQuickLog] = useState({})
   const [notifPerm, setNotifPerm] = useState(typeof Notification !== 'undefined' ? Notification.permission : 'denied')
+  const [showCelebration, setShowCelebration] = useState(false)
 
   // Morning check states
   const [showEnergyCheck, setShowEnergyCheck] = useState(false)
@@ -298,12 +299,16 @@ export default function Home() {
     }
     setRoutineLog(prev => ({ ...prev, [routine.id]: { ...prev[routine.id], done: true } }))
     await supabase.from('xp_log').insert({ amount: 50, reason: `Routine: ${routine.title}`, date: today() })
+    const newRoutineDone = routineItems.filter(r => r.id === routine.id ? true : routineLog[r.id]?.done).length
+    checkCompletion(newRoutineDone + goalsDone + medsDone, totalItems)
     setModal(null)
   }
 
   async function toggleGoal(goal) {
     await supabase.from('goals').update({ done: !goal.done }).eq('id', goal.id)
-    setGoals(goals.map(g => g.id === goal.id ? { ...g, done: !g.done } : g))
+    const updated = goals.map(g => g.id === goal.id ? { ...g, done: !g.done } : g)
+    setGoals(updated)
+    checkCompletion(routineDone + updated.filter(g => g.done).length + medsDone, totalItems)
   }
 
   async function addGoal() {
@@ -336,6 +341,8 @@ export default function Home() {
     }
     setMedLog(prev => ({ ...prev, [med.id]: !current }))
     if (!current) await supabase.from('xp_log').insert({ amount: 10, reason: 'Medicine taken', date: today() })
+    const newMedsDone = medicines.filter(m => m.id === med.id ? !current : medLog[m.id]).length
+    checkCompletion(routineDone + goalsDone + newMedsDone, totalItems)
   }
 
   async function dismissReminder(id) {
@@ -346,6 +353,13 @@ export default function Home() {
   async function enableNotifs() {
     await Notifs.enable()
     setNotifPerm(Notification.permission)
+  }
+
+  function checkCompletion(done, total) {
+    if (total > 0 && done >= total) {
+      setShowCelebration(true)
+      setTimeout(() => setShowCelebration(false), 3500)
+    }
   }
 
   const routineDone = routineItems.filter(r => routineLog[r.id]?.done).length
@@ -838,6 +852,25 @@ export default function Home() {
         </div>
       ) : (
         <button onClick={() => setShowAdd(true)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', width: '100%', padding: '9px', background: 'none', border: '0.5px dashed var(--border)', borderRadius: '8px', color: 'var(--muted)', cursor: 'pointer', fontSize: '12px' }}>+ Add goal</button>
+      )}
+
+      {showCelebration && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 300,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          pointerEvents: 'none'
+        }}>
+          <div style={{
+            background: 'var(--surf)', border: '0.5px solid var(--border)',
+            borderRadius: '16px', padding: '28px 36px', textAlign: 'center',
+            boxShadow: '0 12px 40px rgba(0,0,0,.5)',
+            animation: 'celebIn .45s cubic-bezier(.34,1.56,.64,1)'
+          }}>
+            <div style={{ fontSize: '48px', marginBottom: '10px' }}>🎉</div>
+            <div style={{ fontSize: '17px', fontWeight: 600, marginBottom: '4px' }}>Day complete!</div>
+            <div style={{ fontSize: '13px', color: 'var(--muted2)' }}>You crushed it today 🔥</div>
+          </div>
+        </div>
       )}
 
       {renderModal()}
