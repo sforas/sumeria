@@ -2,9 +2,11 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { Notifs } from '../lib/notifications'
 import { FitnessSymbol, WorkSymbol, ReadingSymbol, LearningSymbol, SocialSymbol, HealthSymbol, SavingsSymbol } from '../components/icons/DistrictSymbols'
+import { getWorkoutIcon } from '../components/icons/getWorkoutIcon'
 import { useAtmosphere } from '../lib/useAtmosphere'
 import { useDistrictScores } from '../lib/useDistrictScores'
 import Skyline from '../components/Skyline'
+import ZigguratPicker from '../components/ZigguratPicker'
 
 function today() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
@@ -46,9 +48,6 @@ const AREAS = [
   { id: 'diet', label: 'Diet', color: 'var(--diet)' },
   { id: 'social', label: 'Social', color: 'var(--social)' },
 ]
-
-const ENERGY_LABELS = ['', 'Very low', 'Low', 'Normal', 'Good', 'Amazing']
-const MOOD_LABELS = ['', 'Terrible', 'Bad', 'Okay', 'Good', 'Great']
 
 function formatElapsed(ms) {
   const mins = Math.floor(ms / 60000)
@@ -508,15 +507,9 @@ export default function Home() {
                 <>
                   <div style={{ marginBottom: '14px' }}>
                     <div style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '8px' }}>How was your mood today?</div>
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      {[1, 2, 3, 4, 5].map(n => (
-                        <button key={n} onClick={() => setQuickLog(p => ({ ...p, mood: n }))}
-                          style={{ flex: 1, padding: '10px 4px', borderRadius: '8px', border: '0.5px solid var(--border)', background: quickLog.mood === n ? 'var(--social)' : 'var(--surf3)', color: quickLog.mood === n ? '#fff' : 'var(--muted)', fontSize: '16px', fontWeight: 600, cursor: 'pointer' }}>
-                          {n}
-                        </button>
-                      ))}
+                    <div style={{ width: '100%', maxWidth: '220px', margin: '0 auto' }}>
+                      <ZigguratPicker value={quickLog.mood} onChange={v => setQuickLog(p => ({ ...p, mood: v }))} color="var(--social)" label="Mood" />
                     </div>
-                    {quickLog.mood && <div style={{ fontSize: '11px', color: 'var(--muted2)', textAlign: 'center', marginTop: '4px' }}>{MOOD_LABELS[quickLog.mood]}</div>}
                   </div>
                   <div style={{ marginBottom: '12px' }}>
                     <div style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '6px' }}>One thing you're grateful for</div>
@@ -587,15 +580,9 @@ export default function Home() {
       <div style={{ padding: '32px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
         <div style={{ fontSize: '18px', fontWeight: 500, marginBottom: '6px', textAlign: 'center' }}>Good morning!</div>
         <div style={{ fontSize: '14px', color: 'var(--muted2)', marginBottom: '28px', textAlign: 'center' }}>How's your energy today?</div>
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', width: '100%', maxWidth: '300px' }}>
-          {[1, 2, 3, 4, 5].map(n => (
-            <button key={n} onClick={() => setEnergyInput(n)}
-              style={{ flex: 1, padding: '14px 4px', borderRadius: '10px', border: '0.5px solid var(--border)', background: energyInput === n ? 'var(--xp)' : 'var(--surf)', color: energyInput === n ? '#000' : 'var(--muted)', fontSize: '16px', fontWeight: 600, cursor: 'pointer' }}>
-              {n}
-            </button>
-          ))}
+        <div style={{ width: '100%', maxWidth: '220px', marginBottom: '20px' }}>
+          <ZigguratPicker value={energyInput} onChange={setEnergyInput} color="var(--acc)" label="Energy" />
         </div>
-        {energyInput > 0 && <div style={{ fontSize: '13px', color: 'var(--muted2)', marginBottom: '20px' }}>{ENERGY_LABELS[energyInput]}</div>}
         <button onClick={saveEnergy} disabled={!energyInput}
           style={{ width: '100%', maxWidth: '300px', background: energyInput ? 'var(--xp)' : 'var(--surf3)', border: 'none', borderRadius: '10px', color: energyInput ? '#000' : 'var(--muted)', fontSize: '14px', padding: '14px', cursor: energyInput ? 'pointer' : 'default', fontWeight: 600 }}>
           Start my day →
@@ -704,7 +691,7 @@ export default function Home() {
         </>
       )}
 
-      {routineItems.length > 0 && (
+      {(routineItems.length > 0 || medicines.length > 0) && (
         <>
           <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '8px' }}>Today's schedule</div>
           {routineItems.map(routine => {
@@ -712,6 +699,9 @@ export default function Home() {
             const isActive = !!activeTimers[routine.id]
             const elapsedMs = elapsed[routine.id] || 0
             const AreaIcon = AREA_ICONS[routine.area]
+            const routineIcon = routine.area === 'fitness'
+              ? (getWorkoutIcon(routine.title, 22, AREA_COLORS.fitness) || <FitnessSymbol size={22} />)
+              : AreaIcon ? <AreaIcon size={22} /> : null
             return (
               <div key={routine.id} onClick={() => openRoutineModal(routine)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: 'var(--surf)', border: '0.5px solid var(--border)', borderLeft: `2px solid ${AREA_COLORS[routine.area] || 'var(--acc)'}`, borderRadius: '0 8px 8px 0', marginBottom: '6px', opacity: isDone ? 0.5 : 1, cursor: 'pointer', transition: 'opacity .2s' }}>
                 <div style={{ width: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -719,9 +709,9 @@ export default function Home() {
                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--acc)' }} />
                   ) : isActive ? (
                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--fit)', animation: 'pulse 1.5s ease-in-out infinite' }} />
-                  ) : AreaIcon ? (
+                  ) : routineIcon ? (
                     <div style={{ color: AREA_COLORS[routine.area] || 'var(--acc)', display: 'flex', alignItems: 'center' }}>
-                      <AreaIcon size={22} />
+                      {routineIcon}
                     </div>
                   ) : (
                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: AREA_COLORS[routine.area] || 'var(--acc)' }} />
@@ -739,15 +729,9 @@ export default function Home() {
               </div>
             )
           })}
-        </>
-      )}
-
-      {medicines.length > 0 && (
-        <>
-          <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px', margin: '12px 0 8px' }}>Medicines</div>
           {medicines.map(med => (
-            <div key={med.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 12px', background: 'var(--surf)', border: '0.5px solid var(--border)', borderLeft: '2px solid var(--health)', borderRadius: '0 8px 8px 0', marginBottom: '6px', opacity: medLog[med.id] ? 0.5 : 1 }}>
-              <div style={{ width: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--health)' }}>
+            <div key={med.id} onClick={() => toggleMed(med)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: 'var(--surf)', border: '0.5px solid var(--border)', borderLeft: '2px solid var(--health)', borderRadius: '0 8px 8px 0', marginBottom: '6px', opacity: medLog[med.id] ? 0.5 : 1, cursor: 'pointer' }}>
+              <div style={{ width: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'var(--health)' }}>
                 <HealthSymbol size={20} />
               </div>
               <div style={{ flex: 1 }}>

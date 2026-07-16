@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { SocialSymbol } from '../components/icons/DistrictSymbols'
 
 const INTERACTION_TYPES = ['Networking', 'Friend', 'LinkedIn', 'Coffee', 'Call', 'Event', 'Other']
 const RELATIONSHIP_TYPES = ['Friend', 'Family', 'Colleague', 'Networking', 'Mentor', 'Other']
@@ -149,11 +150,6 @@ export default function Social() {
 
   const views = ['day', 'week', 'month', 'ytd']
 
-  function typeEmoji(type) {
-    const map = { Networking: '🤝', Friend: '👥', LinkedIn: '💼', Coffee: '☕', Call: '📞', Event: '🎉', Other: '💬', Family: '❤️', Mentor: '🎓', Colleague: '💼' }
-    return map[type] || '💬'
-  }
-
   function urgencyColor(days, target) {
     if (days === null) return 'var(--social)'
     const ratio = days / target
@@ -232,8 +228,8 @@ export default function Social() {
 
               {interactions.slice(0, 10).map(item => (
                 <div key={item.id} style={{ display: 'flex', gap: '10px', padding: '10px 12px', background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '8px', marginBottom: '6px', alignItems: 'center' }}>
-                  <div style={{ width: '30px', height: '30px', borderRadius: '7px', background: '#140a10', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '14px' }}>
-                    {typeEmoji(item.type)}
+                  <div style={{ width: '30px', height: '30px', borderRadius: '7px', background: '#140a10', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'var(--social)' }}>
+                    <SocialSymbol size={16} />
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '1px' }}>{item.person}</div>
@@ -284,8 +280,8 @@ export default function Social() {
                     return (
                       <div key={contact.id} style={{ background: 'var(--surf)', border: '0.5px solid #3d1a16', borderRadius: '10px', padding: '12px 13px', marginBottom: '8px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--surf3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', flexShrink: 0 }}>
-                            {typeEmoji(contact.relationship)}
+                          <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--surf3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'var(--social)' }}>
+                            <SocialSymbol size={18} />
                           </div>
                           <div style={{ flex: 1 }}>
                             <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '1px' }}>{contact.name}</div>
@@ -343,7 +339,7 @@ export default function Social() {
                     {reminders.filter(r => r.contact_id === contact.id && !r.done).map(r => (
                       <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px', padding: '7px 10px', background: 'var(--surf3)', borderRadius: '7px' }}>
                         <span style={{ fontSize: '11px', flex: 1, color: daysUntil(r.remind_on) <= 0 ? 'var(--danger)' : daysUntil(r.remind_on) <= 2 ? 'var(--xp)' : 'var(--muted2)' }}>
-                          🔔 {r.title} · {daysUntil(r.remind_on) === 0 ? 'Today' : daysUntil(r.remind_on) < 0 ? `${Math.abs(daysUntil(r.remind_on))}d overdue` : `in ${daysUntil(r.remind_on)}d`}
+                          {r.title} · {daysUntil(r.remind_on) === 0 ? 'Today' : daysUntil(r.remind_on) < 0 ? `${Math.abs(daysUntil(r.remind_on))}d overdue` : `in ${daysUntil(r.remind_on)}d`}
                         </span>
                         <button onClick={() => toggleReminder(r.id, r.done)} style={{ background: 'var(--fit)', border: 'none', borderRadius: '5px', color: '#000', fontSize: '10px', padding: '3px 7px', cursor: 'pointer' }}>Done</button>
                         <button onClick={() => deleteReminder(r.id)} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '14px' }}>×</button>
@@ -418,7 +414,6 @@ export default function Social() {
                     const contact = contacts.find(c => c.id === r.contact_id)
                     return (
                       <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: 'var(--surf)', border: '0.5px solid #3d1a16', borderRadius: '8px', marginBottom: '6px' }}>
-                        <div style={{ fontSize: '18px' }}>🔔</div>
                         <div style={{ flex: 1 }}>
                           <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '1px' }}>{r.title}</div>
                           <div style={{ fontSize: '11px', color: 'var(--danger)' }}>
@@ -449,7 +444,6 @@ export default function Social() {
                 const days = daysUntil(r.remind_on)
                 return (
                   <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '8px', marginBottom: '6px' }}>
-                    <div style={{ fontSize: '18px' }}>🔔</div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '1px' }}>{r.title}</div>
                       <div style={{ fontSize: '11px', color: days === 0 ? 'var(--xp)' : days <= 2 ? 'var(--xp)' : 'var(--muted2)' }}>
@@ -471,7 +465,7 @@ export default function Social() {
                     const contact = contacts.find(c => c.id === r.contact_id)
                     return (
                       <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '8px', marginBottom: '5px', opacity: 0.5 }}>
-                        <div style={{ fontSize: '16px' }}>✅</div>
+                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--fit)' }} />
                         <div style={{ flex: 1 }}>
                           <div style={{ fontSize: '12px', textDecoration: 'line-through', color: 'var(--muted)' }}>{r.title}</div>
                           <div style={{ fontSize: '11px', color: 'var(--muted)' }}>{contact?.name}</div>

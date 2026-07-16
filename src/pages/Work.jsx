@@ -152,7 +152,7 @@ export default function Work() {
                       ))}
                     </div>
                   </div>
-                  <button onClick={() => setEditApp({ ...app })} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '14px' }}>✏️</button>
+                  <button onClick={() => setEditApp({ ...app })} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '10px' }}>Edit</button>
                   <button onClick={() => deleteApp(app.id)} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '16px' }}>×</button>
                 </div>
               )}

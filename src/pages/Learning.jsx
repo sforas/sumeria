@@ -37,7 +37,7 @@ function CourseCard({ course, editCourse, setEditCourse, onSaveEdit, onDelete, o
               <div style={{ fontSize: '11px', color: 'var(--muted2)' }}>{course.platform} · Module {course.modules_done || 0}/{course.total_modules}</div>
             </div>
             <div style={{ display: 'flex', gap: '4px' }}>
-              <button onClick={() => setEditCourse({ ...course })} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '14px' }}>✏️</button>
+              <button onClick={() => setEditCourse({ ...course })} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '10px' }}>Edit</button>
               <button onClick={() => onDelete(course.id)} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '16px' }}>×</button>
             </div>
           </div>
@@ -207,12 +207,12 @@ export default function Learning() {
               <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px', margin: '12px 0 8px' }}>Finished</div>
               {finished.map(c => (
                 <div key={c.id} style={{ display: 'flex', gap: '10px', padding: '10px 12px', background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '8px', marginBottom: '6px', opacity: 0.7 }}>
-                  <div style={{ fontSize: '18px' }}>✅</div>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--fit)' }} />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: '13px', fontWeight: 500 }}>{c.title}</div>
                     <div style={{ fontSize: '11px', color: 'var(--muted2)' }}>{c.platform} · {c.total_modules} modules</div>
                   </div>
-                  <button onClick={() => setEditCourse({ ...c })} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '14px' }}>✏️</button>
+                  <button onClick={() => setEditCourse({ ...c })} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '10px' }}>Edit</button>
                   <button onClick={() => deleteCourse(c.id)} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '16px' }}>×</button>
                 </div>
               ))}

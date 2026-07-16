@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
-
-const MOOD_EMOJIS = ['', '😞', '😕', '😐', '😊', '🤩']
-const ENERGY_EMOJIS = ['', '😴', '😕', '😐', '⚡', '🔥']
+import ZigguratPicker from '../components/ZigguratPicker'
 
 export default function Journal() {
   const [entries, setEntries] = useState([])
@@ -60,9 +58,9 @@ export default function Journal() {
       {/* Summary KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px', marginBottom: '14px' }}>
         {[
-          { label: 'Entries', value: entries.length, color: '#A78BFA' },
-          { label: 'Avg mood', value: avgMood > 0 ? `${MOOD_EMOJIS[Math.round(avgMood)]} ${avgMood.toFixed(1)}` : '—', color: 'var(--social)' },
-          { label: 'Avg energy', value: avgEnergy > 0 ? `${ENERGY_EMOJIS[Math.round(avgEnergy)]} ${avgEnergy.toFixed(1)}` : '—', color: 'var(--xp)' },
+          { label: 'Entries', value: entries.length, color: 'var(--journal)' },
+          { label: 'Avg mood', value: avgMood > 0 ? `${avgMood.toFixed(1)}/5` : '—', color: 'var(--social)' },
+          { label: 'Avg energy', value: avgEnergy > 0 ? `${avgEnergy.toFixed(1)}/5` : '—', color: 'var(--xp)' },
         ].map((k, i) => (
           <div key={i} style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '11px 13px' }}>
             <div style={{ fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '4px' }}>{k.label}</div>
@@ -85,26 +83,26 @@ export default function Journal() {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
                 <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--muted2)' }}>{entry.date}</div>
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                  {entry.mood && <span style={{ fontSize: '16px' }}>{MOOD_EMOJIS[entry.mood]}</span>}
-                  {entry.energy && <span style={{ fontSize: '16px' }}>{ENERGY_EMOJIS[entry.energy]}</span>}
+                  {entry.mood && <span style={{ fontSize: '11px', color: 'var(--social)' }}>Mood {entry.mood}/5</span>}
+                  {entry.energy && <span style={{ fontSize: '11px', color: 'var(--xp)' }}>Energy {entry.energy}/5</span>}
                   <button onClick={() => deleteEntry(entry.id)} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '16px' }}>×</button>
                 </div>
               </div>
               {entry.priority && (
                 <div style={{ marginBottom: '8px' }}>
-                  <div style={{ fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '3px' }}>🎯 Priority</div>
+                  <div style={{ fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '3px' }}>Priority</div>
                   <div style={{ fontSize: '13px' }}>{entry.priority}</div>
                 </div>
               )}
               {entry.gratitude && (
                 <div style={{ marginBottom: '8px' }}>
-                  <div style={{ fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '3px' }}>🙏 Grateful for</div>
+                  <div style={{ fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '3px' }}>Grateful for</div>
                   <div style={{ fontSize: '13px' }}>{entry.gratitude}</div>
                 </div>
               )}
               {entry.win && (
                 <div>
-                  <div style={{ fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '3px' }}>🏆 Win</div>
+                  <div style={{ fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '3px' }}>Win</div>
                   <div style={{ fontSize: '13px' }}>{entry.win}</div>
                 </div>
               )}
@@ -142,7 +140,9 @@ export default function Journal() {
                     const best = entries.filter(e => e.mood).sort((a, b) => b.mood - a.mood)[0]
                     return best ? (
                       <>
-                        <div style={{ fontSize: '22px', marginBottom: '2px' }}>{MOOD_EMOJIS[best.mood]}</div>
+                        <div style={{ maxWidth: '110px', marginBottom: '4px' }}>
+                          <ZigguratPicker value={best.mood} onChange={() => {}} color="var(--social)" />
+                        </div>
                         <div style={{ fontSize: '11px', color: 'var(--muted2)' }}>{best.date}</div>
                       </>
                     ) : <div style={{ fontSize: '13px', color: 'var(--muted)' }}>—</div>
@@ -154,7 +154,9 @@ export default function Journal() {
                     const best = entries.filter(e => e.energy).sort((a, b) => b.energy - a.energy)[0]
                     return best ? (
                       <>
-                        <div style={{ fontSize: '22px', marginBottom: '2px' }}>{ENERGY_EMOJIS[best.energy]}</div>
+                        <div style={{ maxWidth: '110px', marginBottom: '4px' }}>
+                          <ZigguratPicker value={best.energy} onChange={() => {}} color="var(--xp)" />
+                        </div>
                         <div style={{ fontSize: '11px', color: 'var(--muted2)' }}>{best.date}</div>
                       </>
                     ) : <div style={{ fontSize: '13px', color: 'var(--muted)' }}>—</div>
@@ -163,7 +165,7 @@ export default function Journal() {
               </div>
 
               <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '13px 14px' }}>
-                <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '10px' }}>Recent wins 🏆</div>
+                <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '10px' }}>Recent wins</div>
                 {entries.filter(e => e.win).slice(0, 5).map(e => (
                   <div key={e.id} style={{ display: 'flex', gap: '8px', padding: '6px 0', borderBottom: '0.5px solid var(--border)' }}>
                     <div style={{ fontSize: '11px', color: 'var(--muted)', flexShrink: 0 }}>{e.date?.slice(5)}</div>

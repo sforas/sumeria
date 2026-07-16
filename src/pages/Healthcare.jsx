@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { Notifs } from '../lib/notifications'
+import { HealthSymbol } from '../components/icons/DistrictSymbols'
 
 function today() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
@@ -261,7 +262,6 @@ async function requestNotifs() {
     borderRadius: '10px', padding: '12px 14px', marginBottom: '12px',
     display: 'flex', alignItems: 'center', gap: '10px'
   }}>
-    <div style={{ fontSize: '20px' }}>🔔</div>
     <div style={{ flex: 1 }}>
       <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '2px' }}>Enable notifications</div>
       <div style={{ fontSize: '11px', color: 'var(--muted2)' }}>Get medicine reminders and daily check-ins</div>
@@ -306,7 +306,9 @@ async function requestNotifs() {
                 <MedForm data={editMed} setData={setEditMed} onSave={saveMedicine} onCancel={() => setEditMed(null)} title="Edit medicine" />
               ) : (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '8px', marginBottom: '6px', opacity: medLog[med.id] ? 0.6 : 1 }}>
-                  <div style={{ width: '32px', height: '32px', borderRadius: '7px', background: '#160610', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '16px' }}>💊</div>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '7px', background: '#160610', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'var(--health)' }}>
+                    <HealthSymbol size={18} />
+                  </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '1px' }}>
                       {med.name}
@@ -314,7 +316,7 @@ async function requestNotifs() {
                     </div>
                     <div style={{ fontSize: '11px', color: 'var(--muted2)' }}>{med.dose} · {med.time}{med.with_food ? ' · with food' : ''}</div>
                   </div>
-                  <button onClick={() => setEditMed({ ...med })} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '14px', padding: '4px' }}>✏️</button>
+                  <button onClick={() => setEditMed({ ...med })} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '10px', padding: '4px' }}>Edit</button>
                   <div onClick={() => toggleMed(med)} style={{ width: '28px', height: '28px', borderRadius: '6px', border: medLog[med.id] ? 'none' : '1.5px solid var(--border)', background: medLog[med.id] ? 'var(--health)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '12px', color: '#fff', flexShrink: 0 }}>
                     {medLog[med.id] ? '✓' : ''}
                   </div>
@@ -345,7 +347,7 @@ async function requestNotifs() {
                     <span style={{ fontSize: '11px', color: 'var(--muted)', minWidth: '70px' }}>{s.date}</span>
                     <span style={{ fontSize: '12px', color: 'var(--muted2)' }}>{s.sleep_time} → {s.wake_time}</span>
                     <span style={{ fontSize: '12px', fontWeight: 500, color: dur && dur.total >= 420 ? 'var(--fit)' : 'var(--xp)' }}>{dur?.label || '—'}</span>
-                    <button onClick={() => setEditSleep({ ...s })} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '13px' }}>✏️</button>
+                    <button onClick={() => setEditSleep({ ...s })} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '10px' }}>Edit</button>
                     <button onClick={() => deleteSleep(s.id)} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '14px' }}>×</button>
                   </div>
                 )}

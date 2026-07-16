@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
+import { getWorkoutIcon } from '../components/icons/getWorkoutIcon'
 
 const WORKOUT_TYPES = ['Calisthenics', 'Fútbol', 'Pádel', 'Golf', 'Other']
 
@@ -229,22 +230,8 @@ export default function Fitness() {
             Weekly progress photo
           </div>
           <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '12px 13px', marginBottom: '12px' }}>
-            <div style={{ fontSize: '11px', color: 'var(--muted2)', marginBottom: '8px' }}>
-              Align with the guide — same spot, same distance every week.
-            </div>
-            <div style={{
-              width: '100%', aspectRatio: '3/4', background: 'var(--surf3)',
-              borderRadius: '8px', maxHeight: '200px', position: 'relative',
-              overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}>
-              <div style={{
-                position: 'absolute', inset: 0,
-                backgroundImage: 'linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px)',
-                backgroundSize: '33.33% 33.33%', opacity: .35
-              }} />
-              <div style={{ position: 'absolute', width: '25%', aspectRatio: '1', border: '1.5px dashed #3a3a3a', borderRadius: '50%', top: '4%', left: '37.5%' }} />
-              <div style={{ position: 'absolute', width: '36%', height: '80%', border: '1.5px dashed #3a3a3a', borderRadius: '50% 50% 38% 38%', top: '9%', left: '32%' }} />
-              <span style={{ position: 'absolute', bottom: '8px', fontSize: '10px', color: 'var(--muted)' }}>Stand here every week</span>
+            <div style={{ fontSize: '12px', color: 'var(--muted)' }}>
+              Same spot, same distance each week.
             </div>
 
             <input ref={photoInputRef} type="file" accept="image/*" style={{ display: 'none' }}
@@ -254,12 +241,12 @@ export default function Fitness() {
               <button onClick={() => { photoInputRef.current.removeAttribute('capture'); photoInputRef.current.click() }}
                 disabled={uploadingPhoto}
                 style={{ flex: 1, padding: '8px', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '6px', color: uploadingPhoto ? 'var(--muted)' : 'var(--text)', fontSize: '11px', cursor: 'pointer' }}>
-                🖼 {uploadingPhoto ? 'Uploading...' : 'Upload'}
+                {uploadingPhoto ? 'Uploading...' : 'Upload'}
               </button>
               <button onClick={() => { photoInputRef.current.setAttribute('capture', 'environment'); photoInputRef.current.click() }}
                 disabled={uploadingPhoto}
                 style={{ flex: 1, padding: '8px', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '6px', color: uploadingPhoto ? 'var(--muted)' : 'var(--text)', fontSize: '11px', cursor: 'pointer' }}>
-                📷 {uploadingPhoto ? 'Uploading...' : 'Take photo'}
+                {uploadingPhoto ? 'Uploading...' : 'Take photo'}
               </button>
             </div>
 
@@ -289,7 +276,7 @@ export default function Fitness() {
                   border: '0.5px solid var(--border)', borderRadius: '6px',
                   color: showCompare ? '#000' : 'var(--text)', fontSize: '11px',
                   padding: '5px 10px', cursor: 'pointer', fontWeight: 500
-                }}>{showCompare ? 'Close' : '📊 Compare'}</button>
+                }}>{showCompare ? 'Close' : 'Compare'}</button>
               </div>
 
               {showCompare && (
@@ -367,12 +354,12 @@ export default function Fitness() {
                 <WorkoutForm data={editWorkout} setData={setEditWorkout} onSave={saveWorkout} onCancel={() => setEditWorkout(null)} title="Edit session" />
               ) : (
                 <div style={{ display: 'flex', gap: '10px', padding: '10px 12px', background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '8px', marginBottom: '7px' }}>
-                  <div style={{ width: '30px', height: '30px', borderRadius: '7px', background: '#061410', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '14px' }}>💪</div>
+                  <div style={{ width: '30px', height: '30px', borderRadius: '7px', background: '#061410', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{getWorkoutIcon(w.type)}</div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '1px' }}>{w.type}</div>
                     <div style={{ fontSize: '11px', color: 'var(--muted2)' }}>{w.date} · {w.duration_min} min{w.notes ? ` · ${w.notes}` : ''}</div>
                   </div>
-                  <button onClick={() => setEditWorkout({ ...w })} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '14px' }}>✏️</button>
+                  <button onClick={() => setEditWorkout({ ...w })} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '10px' }}>Edit</button>
                   <button onClick={() => deleteWorkout(w.id)} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '16px' }}>×</button>
                 </div>
               )}
@@ -443,7 +430,7 @@ export default function Fitness() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 12px', background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '7px', marginBottom: '5px' }}>
                   <span style={{ fontSize: '11px', color: 'var(--muted)' }}>{w.date}</span>
                   <span style={{ fontWeight: 500 }}>{w.kg} kg</span>
-                  <button onClick={() => setEditWeight({ ...w })} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '13px' }}>✏️</button>
+                  <button onClick={() => setEditWeight({ ...w })} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '10px' }}>Edit</button>
                   <button onClick={() => deleteWeight(w.id)} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '14px' }}>×</button>
                 </div>
               )}

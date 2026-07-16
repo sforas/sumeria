@@ -82,7 +82,7 @@ export default function Savings() {
   const emergencyGoal = 100000
   const views = ['month', 'ytd']
 
-  function txIcon(type) { return type === 'saving' ? '💰' : type === 'income' ? '📈' : '📉' }
+  function txDotColor(type) { return type === 'saving' ? 'var(--savings)' : type === 'income' ? 'var(--fit)' : 'var(--danger)' }
   function txColor(type) { return type === 'expense' ? 'var(--diet)' : 'var(--savings)' }
   function formatMXN(amount) { return `$${Math.abs(amount).toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} MXN` }
 
@@ -164,13 +164,15 @@ export default function Savings() {
                 <TxForm data={editTx} setData={setEditTx} onSave={saveTransaction} onCancel={() => setEditTx(null)} title="Edit transaction" />
               ) : (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '9px 12px', background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '8px', marginBottom: '5px' }}>
-                  <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: tx.type === 'expense' ? '#160d07' : '#061208', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '13px' }}>{txIcon(tx.type)}</div>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: tx.type === 'expense' ? '#160d07' : '#061208', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: txDotColor(tx.type) }} />
+                  </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '1px' }}>{tx.description}</div>
                     <div style={{ fontSize: '11px', color: 'var(--muted2)' }}>{tx.date} · {tx.type}</div>
                   </div>
                   <div style={{ fontSize: '13px', fontWeight: 500, color: txColor(tx.type) }}>{tx.amount > 0 ? '+' : ''}{formatMXN(tx.amount)}</div>
-                  <button onClick={() => setEditTx({ ...tx, amount: Math.abs(tx.amount) })} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '14px' }}>✏️</button>
+                  <button onClick={() => setEditTx({ ...tx, amount: Math.abs(tx.amount) })} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '10px' }}>Edit</button>
                   <button onClick={() => deleteTransaction(tx.id)} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '16px' }}>×</button>
                 </div>
               )}
@@ -201,7 +203,7 @@ export default function Savings() {
             ))}
           </div>
           <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '13px', fontSize: '12px', color: 'var(--muted2)', lineHeight: 1.7 }}>
-            💡 When you land a job, this section evolves into a full investment tracker — CETES, ETFs, GBM+, and more.
+            When you land a job, this section evolves into a full investment tracker — CETES, ETFs, GBM+, and more.
           </div>
         </>
       )}

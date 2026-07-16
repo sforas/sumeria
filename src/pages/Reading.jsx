@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { ReadingSymbol } from '../components/icons/DistrictSymbols'
 
 function today() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
@@ -122,7 +123,9 @@ export default function Reading() {
                 <BookEditForm data={editBook} setData={setEditBook} onSave={saveBook} onCancel={() => setEditBook(null)} />
               ) : (
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-                  <div style={{ width: '36px', height: '48px', borderRadius: '4px', background: 'var(--surf3)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>📖</div>
+                  <div style={{ width: '36px', height: '48px', borderRadius: '4px', background: 'var(--surf3)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--read)' }}>
+                    <ReadingSymbol size={20} />
+                  </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '1px' }}>{book.title}</div>
                     <div style={{ fontSize: '11px', color: 'var(--muted2)', marginBottom: '6px' }}>{book.author} · {book.format === 'physical' ? 'Physical' : 'Kindle'}</div>
@@ -135,7 +138,7 @@ export default function Reading() {
                     </div>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <button onClick={() => setEditBook({ ...book })} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '14px' }}>✏️</button>
+                    <button onClick={() => setEditBook({ ...book })} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '10px' }}>Edit</button>
                     <button onClick={() => deleteBook(book.id)} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '16px' }}>×</button>
                   </div>
                 </div>
@@ -164,12 +167,14 @@ export default function Reading() {
               <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px', margin: '12px 0 8px' }}>Finished</div>
               {finished.map(book => (
                 <div key={book.id} style={{ display: 'flex', gap: '10px', padding: '10px 12px', background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '8px', marginBottom: '6px', alignItems: 'center', opacity: 0.7 }}>
-                  <div style={{ width: '30px', height: '42px', borderRadius: '4px', background: 'var(--surf3)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>✅</div>
+                  <div style={{ width: '30px', height: '42px', borderRadius: '4px', background: 'var(--surf3)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--fit)' }} />
+                  </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '1px' }}>{book.title}</div>
                     <div style={{ fontSize: '11px', color: 'var(--muted2)' }}>{book.author} · {book.total_pages} pages</div>
                   </div>
-                  <button onClick={() => setEditBook({ ...book })} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '14px' }}>✏️</button>
+                  <button onClick={() => setEditBook({ ...book })} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '10px' }}>Edit</button>
                   <button onClick={() => deleteBook(book.id)} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '16px' }}>×</button>
                 </div>
               ))}

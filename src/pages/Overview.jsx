@@ -112,14 +112,14 @@ export default function Overview() {
     const savingsScore = Math.min(Math.round(savedInPeriod / savingsTarget * 100), 100)
 
     const data = [
-      { area: 'Fitness', score: fitnessScore, color: '#2DCE9A' },
-      { area: 'Work', score: workScore, color: '#9B8FFF' },
-      { area: 'Diet', score: dietScore, color: '#E2784A' },
-      { area: 'Reading', score: readScore, color: '#C8A83A' },
-      { area: 'Learning', score: learnScore, color: '#4A9EE8' },
-      { area: 'Social', score: socialScore, color: '#D46FA0' },
-      { area: 'Health', score: healthScore, color: '#E24B7A' },
-      { area: 'Savings', score: savingsScore, color: '#27AE60' },
+      { area: 'Fitness', score: fitnessScore, color: 'var(--fit)' },
+      { area: 'Work', score: workScore, color: 'var(--work)' },
+      { area: 'Diet', score: dietScore, color: 'var(--diet)' },
+      { area: 'Reading', score: readScore, color: 'var(--read)' },
+      { area: 'Learning', score: learnScore, color: 'var(--learn)' },
+      { area: 'Social', score: socialScore, color: 'var(--social)' },
+      { area: 'Health', score: healthScore, color: 'var(--health)' },
+      { area: 'Savings', score: savingsScore, color: 'var(--savings)' },
     ]
 
     setScores(data)
