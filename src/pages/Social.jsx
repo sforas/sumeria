@@ -281,7 +281,7 @@ export default function Social() {
                       <div key={contact.id} style={{ background: 'var(--surf)', border: '0.5px solid #3d1a16', borderRadius: '10px', padding: '12px 13px', marginBottom: '8px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                           <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--surf3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'var(--social)' }}>
-                            <SocialSymbol size={18} />
+                            <SocialSymbol size={16} />
                           </div>
                           <div style={{ flex: 1 }}>
                             <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '1px' }}>{contact.name}</div>
@@ -315,8 +315,8 @@ export default function Social() {
                 return (
                   <div key={contact.id} style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '12px 13px', marginBottom: '8px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--surf3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', flexShrink: 0 }}>
-                        {typeEmoji(contact.relationship)}
+                      <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--surf3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'var(--social)' }}>
+                        <SocialSymbol size={16} />
                       </div>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '1px' }}>{contact.name}</div>
