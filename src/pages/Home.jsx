@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { Notifs } from '../lib/notifications'
+import { FitnessSymbol, WorkSymbol, ReadingSymbol, LearningSymbol, SocialSymbol, HealthSymbol, SavingsSymbol } from '../components/icons/DistrictSymbols'
+import { useAtmosphere } from '../lib/useAtmosphere'
+import { useDistrictScores } from '../lib/useDistrictScores'
+import Skyline from '../components/Skyline'
 
 function today() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
@@ -29,9 +33,9 @@ const AREA_COLORS = {
   health: 'var(--health)', savings: 'var(--savings)',
 }
 
-const AREA_EMOJIS = {
-  fitness: '💪', work: '💼', diet: '🥗', reading: '📚',
-  learning: '🧠', social: '👥', health: '💊', savings: '💰',
+const AREA_ICONS = {
+  fitness: FitnessSymbol, work: WorkSymbol, reading: ReadingSymbol,
+  learning: LearningSymbol, social: SocialSymbol, health: HealthSymbol, savings: SavingsSymbol
 }
 
 const AREAS = [
@@ -43,8 +47,8 @@ const AREAS = [
   { id: 'social', label: 'Social', color: 'var(--social)' },
 ]
 
-const ENERGY_LABELS = ['', 'Very low 😴', 'Low 😕', 'Normal 😐', 'Good ⚡', 'Amazing 🔥']
-const MOOD_LABELS = ['', 'Terrible 😞', 'Bad 😕', 'Okay 😐', 'Good 😊', 'Great 🤩']
+const ENERGY_LABELS = ['', 'Very low', 'Low', 'Normal', 'Good', 'Amazing']
+const MOOD_LABELS = ['', 'Terrible', 'Bad', 'Okay', 'Good', 'Great']
 
 function formatElapsed(ms) {
   const mins = Math.floor(ms / 60000)
@@ -54,6 +58,9 @@ function formatElapsed(ms) {
 }
 
 export default function Home() {
+  useAtmosphere()
+  const { scores } = useDistrictScores()
+
   const [goals, setGoals] = useState([])
   const [routineItems, setRoutineItems] = useState([])
   const [routineLog, setRoutineLog] = useState({})
@@ -73,7 +80,6 @@ export default function Home() {
   const [modal, setModal] = useState(null)
   const [quickLog, setQuickLog] = useState({})
   const [notifPerm, setNotifPerm] = useState(typeof Notification !== 'undefined' ? Notification.permission : 'denied')
-  const [showCelebration, setShowCelebration] = useState(false)
 
   // Morning check states
   const [showEnergyCheck, setShowEnergyCheck] = useState(false)
@@ -299,16 +305,12 @@ export default function Home() {
     }
     setRoutineLog(prev => ({ ...prev, [routine.id]: { ...prev[routine.id], done: true } }))
     await supabase.from('xp_log').insert({ amount: 50, reason: `Routine: ${routine.title}`, date: today() })
-    const newRoutineDone = routineItems.filter(r => r.id === routine.id ? true : routineLog[r.id]?.done).length
-    checkCompletion(newRoutineDone + goalsDone + medsDone, totalItems)
     setModal(null)
   }
 
   async function toggleGoal(goal) {
     await supabase.from('goals').update({ done: !goal.done }).eq('id', goal.id)
-    const updated = goals.map(g => g.id === goal.id ? { ...g, done: !g.done } : g)
-    setGoals(updated)
-    checkCompletion(routineDone + updated.filter(g => g.done).length + medsDone, totalItems)
+    setGoals(goals.map(g => g.id === goal.id ? { ...g, done: !g.done } : g))
   }
 
   async function addGoal() {
@@ -341,8 +343,6 @@ export default function Home() {
     }
     setMedLog(prev => ({ ...prev, [med.id]: !current }))
     if (!current) await supabase.from('xp_log').insert({ amount: 10, reason: 'Medicine taken', date: today() })
-    const newMedsDone = medicines.filter(m => m.id === med.id ? !current : medLog[m.id]).length
-    checkCompletion(routineDone + goalsDone + newMedsDone, totalItems)
   }
 
   async function dismissReminder(id) {
@@ -355,21 +355,9 @@ export default function Home() {
     setNotifPerm(Notification.permission)
   }
 
-  function checkCompletion(done, total) {
-    if (total > 0 && done >= total) {
-      setShowCelebration(true)
-      setTimeout(() => setShowCelebration(false), 3500)
-    }
-  }
-
   const routineDone = routineItems.filter(r => routineLog[r.id]?.done).length
   const goalsDone = goals.filter(g => g.done).length
   const medsDone = medicines.filter(m => medLog[m.id]).length
-  const totalItems = routineItems.length + goals.length + medicines.length
-  const totalDone = routineDone + goalsDone + medsDone
-  const pct = totalItems > 0 ? Math.round(totalDone / totalItems * 100) : 0
-  const minToUnlock = totalItems > 0 ? Math.ceil(totalItems * 0.6) : 5
-  const unlocked = totalDone >= minToUnlock && totalItems > 0
 
   const goalsByArea = AREAS.map(area => ({
     ...area, goals: goals.filter(g => g.area === area.id)
@@ -390,7 +378,7 @@ export default function Home() {
 
           {isDone && !isActive && (
             <div style={{ textAlign: 'center', padding: '20px 0' }}>
-              <div style={{ fontSize: '36px', marginBottom: '8px' }}>✅</div>
+              <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--acc)', margin: '0 auto 8px' }} />
               <div style={{ fontSize: '14px', color: 'var(--fit)', fontWeight: 500 }}>Completed!</div>
             </div>
           )}
@@ -400,7 +388,7 @@ export default function Home() {
             <>
               <div style={{ textAlign: 'center', marginBottom: '20px', padding: '16px', background: 'var(--surf3)', borderRadius: '10px' }}>
                 <div style={{ fontSize: '40px', fontWeight: 500, color: 'var(--fit)' }}>{formatElapsed(elapsedMs)}</div>
-                <div style={{ fontSize: '12px', color: 'var(--muted2)', marginTop: '4px' }}>Timer running ⏱</div>
+                <div style={{ fontSize: '12px', color: 'var(--muted2)', marginTop: '4px' }}>Timer running</div>
               </div>
               {type === 'workout' && (
                 <input placeholder="Notes (optional)" value={quickLog.notes || ''}
@@ -462,20 +450,20 @@ export default function Home() {
                 <>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
                     <div>
-                      <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '6px', textAlign: 'center' }}>Max push-ups 💪</div>
+                      <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '6px', textAlign: 'center' }}>Max push-ups</div>
                       <input type="number" inputMode="numeric" placeholder="e.g. 25" value={quickLog.max_pushups || ''}
                         onChange={e => setQuickLog(p => ({ ...p, max_pushups: e.target.value }))}
                         style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '20px', padding: '12px', outline: 'none', textAlign: 'center' }} />
                     </div>
                     <div>
-                      <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '6px', textAlign: 'center' }}>Max pull-ups 🏋️</div>
+                      <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '6px', textAlign: 'center' }}>Max pull-ups</div>
                       <input type="number" inputMode="numeric" placeholder="e.g. 10" value={quickLog.max_pullups || ''}
                         onChange={e => setQuickLog(p => ({ ...p, max_pullups: e.target.value }))}
                         style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '20px', padding: '12px', outline: 'none', textAlign: 'center' }} />
                     </div>
                   </div>
                   <button onClick={() => completeRoutine(routine, quickLog)} style={{ width: '100%', background: 'var(--fit)', border: 'none', borderRadius: '8px', color: '#000', fontSize: '14px', padding: '13px', cursor: 'pointer', fontWeight: 600 }}>
-                    Save PRs 🏆
+                    Save PRs
                   </button>
                 </>
               )}
@@ -492,7 +480,7 @@ export default function Home() {
                     onChange={e => setQuickLog(p => ({ ...p, current_page: e.target.value }))}
                     style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '16px', padding: '12px', outline: 'none', marginBottom: '12px', textAlign: 'center' }} />
                   <button onClick={() => completeRoutine(routine, quickLog)} style={{ width: '100%', background: 'var(--read)', border: 'none', borderRadius: '8px', color: '#000', fontSize: '14px', padding: '13px', cursor: 'pointer', fontWeight: 600 }}>
-                    Save progress 📚
+                    Save progress
                   </button>
                 </>
               )}
@@ -510,7 +498,7 @@ export default function Home() {
                     ))}
                   </div>
                   <button onClick={() => completeRoutine(routine, quickLog)} style={{ width: '100%', background: 'var(--learn)', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '14px', padding: '13px', cursor: 'pointer', fontWeight: 600 }}>
-                    Save 💧
+                    Save
                   </button>
                 </>
               )}
@@ -523,27 +511,27 @@ export default function Home() {
                     <div style={{ display: 'flex', gap: '6px' }}>
                       {[1, 2, 3, 4, 5].map(n => (
                         <button key={n} onClick={() => setQuickLog(p => ({ ...p, mood: n }))}
-                          style={{ flex: 1, padding: '10px 4px', borderRadius: '8px', border: '0.5px solid var(--border)', background: quickLog.mood === n ? 'var(--social)' : 'var(--surf3)', color: quickLog.mood === n ? '#fff' : 'var(--muted)', fontSize: '18px', cursor: 'pointer' }}>
-                          {['😞', '😕', '😐', '😊', '🤩'][n - 1]}
+                          style={{ flex: 1, padding: '10px 4px', borderRadius: '8px', border: '0.5px solid var(--border)', background: quickLog.mood === n ? 'var(--social)' : 'var(--surf3)', color: quickLog.mood === n ? '#fff' : 'var(--muted)', fontSize: '16px', fontWeight: 600, cursor: 'pointer' }}>
+                          {n}
                         </button>
                       ))}
                     </div>
                     {quickLog.mood && <div style={{ fontSize: '11px', color: 'var(--muted2)', textAlign: 'center', marginTop: '4px' }}>{MOOD_LABELS[quickLog.mood]}</div>}
                   </div>
                   <div style={{ marginBottom: '12px' }}>
-                    <div style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '6px' }}>🙏 One thing you're grateful for</div>
+                    <div style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '6px' }}>One thing you're grateful for</div>
                     <input placeholder="Today I'm grateful for..." value={quickLog.gratitude || ''}
                       onChange={e => setQuickLog(p => ({ ...p, gratitude: e.target.value }))}
                       style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none' }} />
                   </div>
                   <div style={{ marginBottom: '14px' }}>
-                    <div style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '6px' }}>🏆 Today's win</div>
+                    <div style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '6px' }}>Today's win</div>
                     <input placeholder="My win today was..." value={quickLog.win || ''}
                       onChange={e => setQuickLog(p => ({ ...p, win: e.target.value }))}
                       style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none' }} />
                   </div>
                   <button onClick={() => completeRoutine(routine, quickLog)} style={{ width: '100%', background: 'var(--social)', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '14px', padding: '13px', cursor: 'pointer', fontWeight: 600 }}>
-                    Save reflection 🌙
+                    Save reflection
                   </button>
                 </>
               )}
@@ -552,7 +540,7 @@ export default function Home() {
               {(type === 'workout' || type === 'learning') && (
                 <>
                   <button onClick={() => startTimer(routine)} style={{ width: '100%', background: 'var(--fit)', border: 'none', borderRadius: '8px', color: '#000', fontSize: '15px', padding: '14px', cursor: 'pointer', fontWeight: 700, marginBottom: '10px' }}>
-                    ▶ Start
+                    Start
                   </button>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
                     <div style={{ flex: 1, height: '0.5px', background: 'var(--border)' }} />
@@ -597,14 +585,13 @@ export default function Home() {
   if (showEnergyCheck) {
     return (
       <div style={{ padding: '32px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-        <div style={{ fontSize: '40px', marginBottom: '12px' }}>⚡</div>
         <div style={{ fontSize: '18px', fontWeight: 500, marginBottom: '6px', textAlign: 'center' }}>Good morning!</div>
         <div style={{ fontSize: '14px', color: 'var(--muted2)', marginBottom: '28px', textAlign: 'center' }}>How's your energy today?</div>
         <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', width: '100%', maxWidth: '300px' }}>
           {[1, 2, 3, 4, 5].map(n => (
             <button key={n} onClick={() => setEnergyInput(n)}
-              style={{ flex: 1, padding: '14px 4px', borderRadius: '10px', border: '0.5px solid var(--border)', background: energyInput === n ? 'var(--xp)' : 'var(--surf)', color: energyInput === n ? '#000' : 'var(--muted)', fontSize: '20px', cursor: 'pointer' }}>
-              {['😴', '😕', '😐', '⚡', '🔥'][n - 1]}
+              style={{ flex: 1, padding: '14px 4px', borderRadius: '10px', border: '0.5px solid var(--border)', background: energyInput === n ? 'var(--xp)' : 'var(--surf)', color: energyInput === n ? '#000' : 'var(--muted)', fontSize: '16px', fontWeight: 600, cursor: 'pointer' }}>
+              {n}
             </button>
           ))}
         </div>
@@ -625,7 +612,6 @@ export default function Home() {
   if (showPriorityCheck) {
     return (
       <div style={{ padding: '32px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-        <div style={{ fontSize: '40px', marginBottom: '12px' }}>🎯</div>
         <div style={{ fontSize: '18px', fontWeight: 500, marginBottom: '6px', textAlign: 'center' }}>What's your #1 priority today?</div>
         <div style={{ fontSize: '13px', color: 'var(--muted2)', marginBottom: '28px', textAlign: 'center' }}>One thing. If you only do one thing today, what would make it a success?</div>
         <input
@@ -651,10 +637,17 @@ export default function Home() {
   return (
     <div style={{ padding: '16px', paddingBottom: '24px' }}>
 
+      <div style={{ background: 'var(--surf)', borderBottom: '0.5px solid var(--border)', padding: '8px 0 0' }}>
+        <Skyline scores={scores} />
+      </div>
+
       <div style={{ marginBottom: '14px' }}>
-        <div style={{ fontSize: '20px', fontWeight: 500, marginBottom: '3px' }}>{getGreeting()} 👋</div>
+        <div style={{ fontSize: '20px', fontWeight: 500, marginBottom: '3px' }}>{getGreeting()}</div>
         <div style={{ fontSize: '12px', color: 'var(--muted2)' }}>
           {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+        </div>
+        <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>
+          {routineDone}/{routineItems.length} routines · {goalsDone}/{goals.length} goals · {medsDone}/{medicines.length} medicines
         </div>
       </div>
 
@@ -664,7 +657,6 @@ export default function Home() {
           borderRadius: '10px', padding: '12px 14px', marginBottom: '12px',
           display: 'flex', alignItems: 'center', gap: '10px'
         }}>
-          <div style={{ fontSize: '20px' }}>🔔</div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '2px' }}>
               {notifPerm === 'denied' ? 'Notifications blocked' : 'Enable notifications'}
@@ -687,7 +679,7 @@ export default function Home() {
       {/* Daily priority card */}
       {journal?.priority && (
         <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderLeft: '2px solid var(--acc)', borderRadius: '0 8px 8px 0', padding: '10px 13px', marginBottom: '12px' }}>
-          <div style={{ fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '3px' }}>🎯 Today's priority</div>
+          <div style={{ fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '3px' }}>Today's priority</div>
           <div style={{ fontSize: '13px', fontWeight: 500 }}>{journal.priority}</div>
         </div>
       )}
@@ -697,41 +689,9 @@ export default function Home() {
         <span style={{ fontSize: '11px', color: 'var(--muted)' }}>— Sumerian wisdom</span>
       </div>
 
-      <div style={{ borderRadius: '10px', padding: '13px 15px', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '12px', background: unlocked ? '#071a0e' : '#1a0908', border: `0.5px solid ${unlocked ? '#1a3d28' : '#3d1a16'}`, transition: 'all .3s' }}>
-        <div style={{ fontSize: '22px' }}>{unlocked ? '🔓' : '🔒'}</div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '2px', color: unlocked ? 'var(--fit)' : 'var(--danger)' }}>
-            {unlocked ? 'Free time unlocked!' : 'Free time locked'}
-          </div>
-          <div style={{ fontSize: '11px', color: 'var(--muted2)' }}>
-            {unlocked ? 'You earned your screen time today 🎉' : `${totalDone}/${totalItems} tasks · need ${minToUnlock} to unlock`}
-          </div>
-          <div style={{ height: '3px', background: 'var(--surf3)', borderRadius: '2px', marginTop: '6px', overflow: 'hidden' }}>
-            <div style={{ width: `${pct}%`, height: '100%', background: unlocked ? 'var(--fit)' : 'var(--danger)', borderRadius: '2px', transition: 'width .3s' }} />
-          </div>
-        </div>
-        <div style={{ fontSize: '18px', fontWeight: 500, color: unlocked ? 'var(--fit)' : 'var(--danger)' }}>{pct}%</div>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px', marginBottom: '16px' }}>
-        {[
-          { label: "Today's tasks", value: `${totalDone}/${totalItems}`, color: 'var(--acc)', pct },
-          { label: 'Routines', value: `${routineDone}/${routineItems.length}`, color: 'var(--fit)', pct: routineItems.length > 0 ? Math.round(routineDone / routineItems.length * 100) : 0 },
-          { label: 'Goals', value: `${goalsDone}/${goals.length}`, color: 'var(--work)', pct: goals.length > 0 ? Math.round(goalsDone / goals.length * 100) : 0 },
-        ].map((k, i) => (
-          <div key={i} style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '11px 13px' }}>
-            <div style={{ fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '4px' }}>{k.label}</div>
-            <div style={{ fontSize: '18px', fontWeight: 500, color: k.color }}>{k.value}</div>
-            <div style={{ height: '3px', background: 'var(--surf3)', borderRadius: '2px', marginTop: '6px', overflow: 'hidden' }}>
-              <div style={{ width: `${k.pct}%`, height: '100%', background: k.color, borderRadius: '2px', transition: 'width .3s' }} />
-            </div>
-          </div>
-        ))}
-      </div>
-
       {reminders.length > 0 && (
         <>
-          <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--danger)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '8px' }}>🔔 Reminders today</div>
+          <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--danger)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '8px' }}>Reminders today</div>
           {reminders.map(r => (
             <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: 'var(--surf)', border: '0.5px solid #3d1a16', borderRadius: '8px', marginBottom: '6px' }}>
               <div style={{ flex: 1 }}>
@@ -751,17 +711,28 @@ export default function Home() {
             const isDone = routineLog[routine.id]?.done
             const isActive = !!activeTimers[routine.id]
             const elapsedMs = elapsed[routine.id] || 0
+            const AreaIcon = AREA_ICONS[routine.area]
             return (
               <div key={routine.id} onClick={() => openRoutineModal(routine)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: 'var(--surf)', border: '0.5px solid var(--border)', borderLeft: `2px solid ${AREA_COLORS[routine.area] || 'var(--acc)'}`, borderRadius: '0 8px 8px 0', marginBottom: '6px', opacity: isDone ? 0.5 : 1, cursor: 'pointer', transition: 'opacity .2s' }}>
-                <div style={{ fontSize: '16px' }}>
-                  {isDone ? '✅' : isActive ? '🕐' : AREA_EMOJIS[routine.area] || '📋'}
+                <div style={{ width: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  {isDone ? (
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--acc)' }} />
+                  ) : isActive ? (
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--fit)', animation: 'pulse 1.5s ease-in-out infinite' }} />
+                  ) : AreaIcon ? (
+                    <div style={{ color: AREA_COLORS[routine.area] || 'var(--acc)', display: 'flex', alignItems: 'center' }}>
+                      <AreaIcon size={22} />
+                    </div>
+                  ) : (
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: AREA_COLORS[routine.area] || 'var(--acc)' }} />
+                  )}
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: '13px', fontWeight: 500, textDecoration: isDone ? 'line-through' : 'none', color: isDone ? 'var(--muted)' : 'var(--text)' }}>
                     {routine.title}
                   </div>
                   <div style={{ fontSize: '11px', color: isActive ? 'var(--fit)' : AREA_COLORS[routine.area] || 'var(--muted)', marginTop: '1px' }}>
-                    {isActive ? `⏱ ${formatElapsed(elapsedMs)} · tap to finish` : isDone ? 'Completed' : `${routine.area} · tap to log`}
+                    {isActive ? `${formatElapsed(elapsedMs)} · tap to finish` : isDone ? 'Completed' : `${routine.area} · tap to log`}
                   </div>
                 </div>
                 <div style={{ fontSize: '12px', color: 'var(--muted)' }}>›</div>
@@ -776,7 +747,9 @@ export default function Home() {
           <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px', margin: '12px 0 8px' }}>Medicines</div>
           {medicines.map(med => (
             <div key={med.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 12px', background: 'var(--surf)', border: '0.5px solid var(--border)', borderLeft: '2px solid var(--health)', borderRadius: '0 8px 8px 0', marginBottom: '6px', opacity: medLog[med.id] ? 0.5 : 1 }}>
-              <div style={{ fontSize: '16px' }}>💊</div>
+              <div style={{ width: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--health)' }}>
+                <HealthSymbol size={20} />
+              </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: '13px', fontWeight: 500, textDecoration: medLog[med.id] ? 'line-through' : 'none', color: medLog[med.id] ? 'var(--muted)' : 'var(--text)' }}>{med.name}</div>
                 <div style={{ fontSize: '11px', color: 'var(--muted2)' }}>{med.dose} · {med.time}{med.with_food ? ' · with food' : ''}</div>
@@ -826,7 +799,7 @@ export default function Home() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <div onClick={() => toggleGoal(goal)} style={{ width: '16px', height: '16px', borderRadius: '50%', border: goal.done ? 'none' : '1.5px solid var(--border)', background: goal.done ? 'var(--acc)' : 'none', cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', color: '#fff' }}>{goal.done ? '✓' : ''}</div>
                     <div style={{ fontSize: '12px', flex: 1, textDecoration: goal.done ? 'line-through' : 'none', color: goal.done ? 'var(--muted)' : 'var(--text)' }}>{goal.text}</div>
-                    <div onClick={() => setEditGoal({ id: goal.id, text: goal.text, area: goal.area })} style={{ fontSize: '11px', color: 'var(--muted)', cursor: 'pointer', opacity: .6 }}>✏️</div>
+                    <div onClick={() => setEditGoal({ id: goal.id, text: goal.text, area: goal.area })} style={{ fontSize: '10px', color: 'var(--muted)', cursor: 'pointer', opacity: .6 }}>Edit</div>
                     <div onClick={() => deleteGoal(goal.id)} style={{ fontSize: '14px', color: 'var(--muted)', cursor: 'pointer', opacity: .6 }}>×</div>
                   </div>
                 )}
@@ -852,25 +825,6 @@ export default function Home() {
         </div>
       ) : (
         <button onClick={() => setShowAdd(true)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', width: '100%', padding: '9px', background: 'none', border: '0.5px dashed var(--border)', borderRadius: '8px', color: 'var(--muted)', cursor: 'pointer', fontSize: '12px' }}>+ Add goal</button>
-      )}
-
-      {showCelebration && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 300,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          pointerEvents: 'none'
-        }}>
-          <div style={{
-            background: 'var(--surf)', border: '0.5px solid var(--border)',
-            borderRadius: '16px', padding: '28px 36px', textAlign: 'center',
-            boxShadow: '0 12px 40px rgba(0,0,0,.5)',
-            animation: 'celebIn .45s cubic-bezier(.34,1.56,.64,1)'
-          }}>
-            <div style={{ fontSize: '48px', marginBottom: '10px' }}>🎉</div>
-            <div style={{ fontSize: '17px', fontWeight: 600, marginBottom: '4px' }}>Day complete!</div>
-            <div style={{ fontSize: '13px', color: 'var(--muted2)' }}>You crushed it today 🔥</div>
-          </div>
-        </div>
       )}
 
       {renderModal()}

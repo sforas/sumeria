@@ -1,25 +1,47 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg: #0d0d0d;
-  --surf: #171717;
-  --surf2: #1f1f1f;
-  --surf3: #272727;
-  --border: #2c2c2c;
-  --text: #ededed;
-  --muted: #666;
-  --muted2: #999;
-  --fit: #2DCE9A;
-  --work: #9B8FFF;
+  /* Base — never change */
+  --ink: #1A1A1A;
+  --ivory: #F2E8D5;
+  --sand: #D8C9A3;
+  --bronze: #8A6D3A;
+
+  /* District colors — fixed, never change with atmosphere */
+  --fit: #C17F3A;      /* copper */
+  --work: #4A7C8E;     /* lapis lazuli */
+  --read: #8B6F47;     /* clay */
+  --learn: #6B8E6B;    /* olive */
+  --social: #B5724A;   /* terracotta */
+  --health: #7A9E7E;   /* jade */
+  --savings: #D4A843;  /* gold */
+  --journal: #8B7355;  /* parchment */
+
+  /* Legacy colors — not part of the new brand book, kept at their
+     existing values so elements still using them (delete buttons,
+     diet stats, low-balance warnings, etc.) don't go black */
   --diet: #E2784A;
-  --read: #C8A83A;
-  --learn: #4A9EE8;
-  --social: #D46FA0;
-  --health: #E24B7A;
-  --savings: #27AE60;
   --xp: #EF9F27;
-  --acc: #7F77DD;
   --danger: #E24B4A;
+
+  /* Atmospheric variables — set by useAtmosphere(), change 4x per day.
+     These are DAY-period defaults, used before the hook mounts. */
+  --bg: #080C18;
+  --surf: #0E1422;
+  --surf2: #141C2E;
+  --surf3: #1A2438;
+  --border: rgba(180,200,240,0.08);
+  --text: #E8F0F8;
+  --muted: #7A90A8;
+  --muted2: #4A6078;
+  --acc: #D4A843;
+  --acc2: #A07828;
+  --sky1: #081828;
+  --sky2: #1A3858;
+}
+
+.atmosphere-ready {
+  transition: background-color 180s ease, color 180s ease;
 }
 
 html, body {
@@ -31,8 +53,7 @@ html, body {
   overscroll-behavior: none;
 }
 
-@keyframes celebIn {
-  0% { opacity: 0; transform: scale(.6); }
-  60% { opacity: 1; transform: scale(1.08); }
-  100% { opacity: 1; transform: scale(1); }
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.3); }
 }

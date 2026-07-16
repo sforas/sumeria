@@ -208,9 +208,9 @@ export default function MonthlyReview({ onClose }) {
           <div style={{ fontSize: '11px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '8px' }}>Life balance</div>
           <ResponsiveContainer width="100%" height={220}>
             <RadarChart data={stats.radarData}>
-              <PolarGrid stroke="#2c2c2c" />
-              <PolarAngleAxis dataKey="area" tick={{ fill: '#777', fontSize: 11 }} />
-              <Radar dataKey="score" stroke="#7F77DD" fill="#7F77DD" fillOpacity={0.15} strokeWidth={2} />
+              <PolarGrid stroke="var(--border)" />
+              <PolarAngleAxis dataKey="area" tick={{ fill: 'var(--muted)', fontSize: 11 }} />
+              <Radar dataKey="score" stroke="var(--acc)" fill="var(--acc)" fillOpacity={0.15} strokeWidth={2} />
             </RadarChart>
           </ResponsiveContainer>
         </div>
@@ -345,7 +345,7 @@ export default function MonthlyReview({ onClose }) {
 
         {/* Wins */}
         {stats.wins.length > 0 && (
-          <div style={{ background: 'linear-gradient(135deg, #1a1208, #0d0d0d)', border: '0.5px solid #EF9F2744', borderRadius: '14px', padding: '16px', marginBottom: '14px' }}>
+          <div style={{ background: 'linear-gradient(135deg, var(--surf2), var(--bg))', border: '0.5px solid #EF9F2744', borderRadius: '14px', padding: '16px', marginBottom: '14px' }}>
             <div style={{ fontSize: '11px', color: 'var(--xp)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '10px' }}>🏆 Monthly wins</div>
             {stats.wins.slice(0, 5).map((w, i) => (
               <div key={i} style={{ display: 'flex', gap: '10px', padding: '8px 0', borderBottom: i < stats.wins.length - 1 ? '0.5px solid var(--border)' : 'none' }}>

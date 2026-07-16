@@ -41,7 +41,7 @@ export default function Journal() {
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
         <div>
-          <div style={{ fontSize: '19px', fontWeight: 500, color: '#A78BFA' }}>Journal</div>
+          <div style={{ fontSize: '19px', fontWeight: 500, color: 'var(--journal)' }}>Journal</div>
           <div style={{ fontSize: '12px', color: 'var(--muted2)', marginTop: '2px' }}>Mood · Energy · Gratitude · Wins</div>
         </div>
         <div style={{ display: 'flex', gap: '3px' }}>
@@ -122,11 +122,11 @@ export default function Journal() {
                 <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '12px' }}>Mood & Energy — last 14 days</div>
                 <ResponsiveContainer width="100%" height={180}>
                   <LineChart data={chartData}>
-                    <CartesianGrid stroke="#2c2c2c" strokeDasharray="3 3" />
-                    <XAxis dataKey="date" tick={{ fill: '#666', fontSize: 10 }} />
-                    <YAxis domain={[0, 5]} tick={{ fill: '#666', fontSize: 10 }} />
+                    <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
+                    <XAxis dataKey="date" tick={{ fill: 'var(--muted)', fontSize: 10 }} />
+                    <YAxis domain={[0, 5]} tick={{ fill: 'var(--muted)', fontSize: 10 }} />
                     <Tooltip
-                      contentStyle={{ background: '#1f1f1f', border: '0.5px solid #2c2c2c', borderRadius: '8px', color: '#ededed', fontSize: '12px' }}
+                      contentStyle={{ background: 'var(--surf2)', border: '0.5px solid var(--border)', borderRadius: '8px', color: 'var(--text)', fontSize: '12px' }}
                       formatter={(val, name) => [`${val}/5`, name]}
                     />
                     <Line type="monotone" dataKey="mood" stroke="#D46FA0" strokeWidth={2} dot={{ fill: '#D46FA0', r: 3 }} connectNulls name="Mood" />

@@ -280,7 +280,7 @@ export default function YearlyReview({ onClose }) {
       </div>
       <div>
         <div style={{ fontSize: '11px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '8px' }}>Journal entries</div>
-        <div style={{ fontSize: '52px', fontWeight: 800, color: '#A78BFA' }}>{stats.journalCount}</div>
+        <div style={{ fontSize: '52px', fontWeight: 800, color: 'var(--journal)' }}>{stats.journalCount}</div>
         <div style={{ fontSize: '16px', color: 'var(--muted2)', marginTop: '4px' }}>days reflected on</div>
       </div>
     </div>,

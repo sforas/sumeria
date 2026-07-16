@@ -172,24 +172,24 @@ export default function Overview() {
           }}>
             <ResponsiveContainer width="100%" height={280}>
               <RadarChart data={scores}>
-                <PolarGrid stroke="#2c2c2c" />
+                <PolarGrid stroke="var(--border)" />
                 <PolarAngleAxis
                   dataKey="area"
-                  tick={{ fill: '#888', fontSize: 11 }}
+                  tick={{ fill: 'var(--muted)', fontSize: 11 }}
                 />
                 <Radar
                   dataKey="score"
-                  stroke="#7F77DD"
-                  fill="#7F77DD"
+                  stroke="var(--acc)"
+                  fill="var(--acc)"
                   fillOpacity={0.15}
                   strokeWidth={2}
                 />
                 <Tooltip
                   contentStyle={{
-                    background: '#1f1f1f',
-                    border: '0.5px solid #2c2c2c',
+                    background: 'var(--surf2)',
+                    border: '0.5px solid var(--border)',
                     borderRadius: '8px',
-                    color: '#ededed',
+                    color: 'var(--text)',
                     fontSize: '12px'
                   }}
                   formatter={(value) => [`${value}%`, 'Score']}

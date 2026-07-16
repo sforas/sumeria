@@ -1,65 +1,84 @@
-const SECTIONS = [
-  { id: 'fitness', label: 'Fitness', emoji: '💪', color: 'var(--fit)', bg: '#061410' },
-  { id: 'work', label: 'Work', emoji: '💼', color: 'var(--work)', bg: '#0e0d1c' },
-  { id: 'reading', label: 'Reading', emoji: '📚', color: 'var(--read)', bg: '#141008' },
-  { id: 'learning', label: 'Learning', emoji: '🧠', color: 'var(--learn)', bg: '#070e18' },
-  { id: 'social', label: 'Social', emoji: '👥', color: 'var(--social)', bg: '#140a10' },
-  { id: 'health', label: 'Healthcare', emoji: '❤️', color: 'var(--health)', bg: '#160610' },
-  { id: 'savings', label: 'Savings', emoji: '💰', color: 'var(--savings)', bg: '#061208' },
-  { id: 'journal', label: 'Journal', emoji: '📓', color: '#A78BFA', bg: '#0e0a1c' },
-  { id: 'overview', label: 'Overview', emoji: '🌐', color: 'var(--acc)', bg: '#0d0b1a' },
-  { id: 'weekly-review', label: 'Weekly Review', emoji: '📊', color: 'var(--xp)', bg: '#1a1208' },
-  { id: 'monthly-review', label: 'Monthly Review', emoji: '📅', color: '#A78BFA', bg: '#0e0a1c' },
-  { id: 'yearly-review', label: 'Yearly Review', emoji: '🎊', color: 'var(--xp)', bg: '#1a1208' },
+import ZigguratLogo from './icons/ZigguratLogo'
+import {
+  FitnessSymbol, WorkSymbol, ReadingSymbol, LearningSymbol, SocialSymbol,
+  HealthSymbol, SavingsSymbol, JournalSymbol, OverviewSymbol
+} from './icons/DistrictSymbols'
+
+const FLOORS = [
+  { id: 'overview', label: 'Overview', Icon: OverviewSymbol, color: 'var(--acc)', width: 48 },
+  { id: 'fitness', label: 'Fitness', Icon: FitnessSymbol, color: 'var(--fit)', width: 58 },
+  { id: 'work', label: 'Work', Icon: WorkSymbol, color: 'var(--work)', width: 66 },
+  { id: 'reading', label: 'Reading', Icon: ReadingSymbol, color: 'var(--read)', width: 73 },
+  { id: 'learning', label: 'Learning', Icon: LearningSymbol, color: 'var(--learn)', width: 80 },
+  { id: 'social', label: 'Social', Icon: SocialSymbol, color: 'var(--social)', width: 87 },
+  { id: 'health', label: 'Healthcare', Icon: HealthSymbol, color: 'var(--health)', width: 93 },
+  { id: 'savings', label: 'Savings', Icon: SavingsSymbol, color: 'var(--savings)', width: 97 },
+  { id: 'journal', label: 'Journal', Icon: JournalSymbol, color: 'var(--journal)', width: 100 }
 ]
 
 export default function Menu({ onNavigate, onClose }) {
+  function go(id) {
+    onNavigate(id)
+    onClose()
+  }
+
   return (
-    <div
-      onClick={onClose}
-      style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,.85)',
-        zIndex: 300, display: 'flex', flexDirection: 'column',
-        padding: '20px 16px 40px'
-      }}
-    >
-      <div onClick={e => e.stopPropagation()} style={{ flex: 1 }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', zIndex: 300 }}>
+      <div style={{
+        maxWidth: '430px', margin: '0 auto', height: '100%', position: 'relative',
+        display: 'flex', flexDirection: 'column', justifyContent: 'center',
+        background: '#050505'
+      }}>
+        <button onClick={onClose} style={{
+          position: 'absolute', top: '16px', right: '16px',
+          background: 'none', border: 'none', color: 'var(--muted)',
+          fontSize: '22px', cursor: 'pointer'
+        }}>×</button>
 
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '28px', paddingTop: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{
-              width: '36px', height: '36px', borderRadius: '10px',
-              background: 'linear-gradient(135deg, #7F77DD, #EF9F27)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '18px', fontWeight: 700, color: '#fff'
-            }}>S</div>
-            <div>
-              <div style={{ fontSize: '16px', fontWeight: 500, letterSpacing: '2px' }}>SUMERIA</div>
-              <div style={{ fontSize: '11px', color: 'var(--muted)' }}>Your daily cockpit</div>
+        {/* Summit — Home */}
+        <button
+          onClick={() => go('home')}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+            height: '52px', width: '38%', margin: '0 auto',
+            background: '#0a0a0a', border: '0.5px solid var(--border)', borderRadius: 0,
+            cursor: 'pointer'
+          }}
+        >
+          <ZigguratLogo size={18} color="var(--sand)" />
+          <span style={{ fontFamily: 'Georgia, serif', fontSize: '11px', letterSpacing: '3px', color: 'var(--sand)' }}>HOME</span>
+        </button>
+
+        {/* Floors — narrowest at top, widest at base */}
+        {FLOORS.map(f => (
+          <button
+            key={f.id}
+            onClick={() => go(f.id)}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              height: '48px', width: `${f.width}%`, margin: '0 auto',
+              background: 'var(--surf)',
+              borderLeft: `2px solid ${f.color}`, borderRight: `2px solid ${f.color}`,
+              borderTop: 'none',
+              borderBottom: '0.5px solid var(--border)', borderRadius: 0,
+              padding: '0 14px',
+              cursor: 'pointer'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <div style={{ color: f.color, display: 'flex', alignItems: 'center' }}>
+                <f.Icon size={28} />
+              </div>
+              <span style={{
+                marginLeft: '10px', fontSize: '11px',
+                fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+                fontWeight: 500, letterSpacing: '0.5px', textTransform: 'uppercase',
+                color: f.color
+              }}>{f.label}</span>
             </div>
-          </div>
-          <button onClick={onClose} style={{ background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '8px', color: 'var(--muted)', fontSize: '18px', width: '34px', height: '34px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
-        </div>
-
-        {/* Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px' }}>
-          {SECTIONS.map(s => (
-            <button
-              key={s.id}
-              onClick={() => { onNavigate(s.id); onClose() }}
-              style={{
-                background: s.bg, border: `0.5px solid ${s.color}22`,
-                borderRadius: '12px', padding: '16px 8px',
-                cursor: 'pointer', display: 'flex', flexDirection: 'column',
-                alignItems: 'center', gap: '8px', transition: 'all .15s'
-              }}
-            >
-              <div style={{ fontSize: '28px' }}>{s.emoji}</div>
-              <div style={{ fontSize: '11px', color: s.color, fontWeight: 500 }}>{s.label}</div>
-            </button>
-          ))}
-        </div>
+            <span style={{ fontSize: '14px', color: 'var(--muted)' }}>›</span>
+          </button>
+        ))}
       </div>
     </div>
   )

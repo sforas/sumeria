@@ -260,7 +260,7 @@ export default function WeeklyReview({ onClose }) {
 
         {/* Best win */}
         {stats.bestWin && (
-          <div style={{ background: 'linear-gradient(135deg, #1a1208, #0d0d0d)', border: '0.5px solid var(--xp)44', borderRadius: '12px', padding: '14px 16px', marginBottom: '16px' }}>
+          <div style={{ background: 'linear-gradient(135deg, var(--surf2), var(--bg))', border: '0.5px solid var(--xp)44', borderRadius: '12px', padding: '14px 16px', marginBottom: '16px' }}>
             <div style={{ fontSize: '11px', color: 'var(--xp)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '6px' }}>🏆 Highlight of the week</div>
             <div style={{ fontSize: '14px', lineHeight: 1.6 }}>"{stats.bestWin}"</div>
           </div>

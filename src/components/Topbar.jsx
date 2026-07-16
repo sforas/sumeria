@@ -1,8 +1,10 @@
+import ZigguratLogo from './icons/ZigguratLogo'
+
 export default function Topbar({ onMenuOpen, activeTab, onHome }) {
   const sectionColors = {
     home: 'var(--acc)', fitness: 'var(--fit)', work: 'var(--work)',
     reading: 'var(--read)', learning: 'var(--learn)', social: 'var(--social)',
-    health: 'var(--health)', savings: 'var(--savings)', journal: '#A78BFA', overview: 'var(--acc)'
+    health: 'var(--health)', savings: 'var(--savings)', journal: 'var(--journal)', overview: 'var(--acc)'
   }
 
   const sectionNames = {
@@ -25,12 +27,7 @@ export default function Topbar({ onMenuOpen, activeTab, onHome }) {
         background: 'none', border: 'none', cursor: 'pointer',
         display: 'flex', alignItems: 'center', gap: '10px', padding: 0
       }}>
-        <div style={{
-          width: '32px', height: '32px', borderRadius: '9px',
-          background: 'linear-gradient(135deg, #7F77DD, #EF9F27)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '16px', fontWeight: 700, color: '#fff'
-        }}>S</div>
+        <ZigguratLogo size={28} color="var(--sand)" />
         {activeTab === 'home' ? (
           <div style={{ fontSize: '14px', fontWeight: 500, letterSpacing: '2px', color: 'var(--text)' }}>
             SUME<span style={{ color: 'var(--xp)' }}>RIA</span>
