@@ -66,6 +66,7 @@ export default function Home() {
   const [medicines, setMedicines] = useState([])
   const [medLog, setMedLog] = useState({})
   const [reminders, setReminders] = useState([])
+  const [contactReminders, setContactReminders] = useState([])
   const [activeTimers, setActiveTimers] = useState({})
   const [elapsed, setElapsed] = useState({})
   const [books, setBooks] = useState([])
@@ -116,6 +117,7 @@ export default function Home() {
       { data: medsData },
       { data: medLogData },
       { data: remindersData },
+      { data: contactRemindersData },
       { data: timersData },
       { data: booksData },
       { data: coursesData },
@@ -127,6 +129,7 @@ export default function Home() {
       supabase.from('medicines').select('*').order('time'),
       supabase.from('med_log').select('*').eq('date', today()),
       supabase.from('reminders').select('*, contacts(name)').eq('remind_on', today()).eq('done', false),
+      supabase.from('contact_reminders').select('*, contacts(name)').eq('remind_on', today()).eq('done', false),
       supabase.from('activity_timers').select('*').eq('date', today()).is('ended_at', null),
       supabase.from('books').select('*').eq('status', 'reading'),
       supabase.from('courses').select('*').eq('status', 'active'),
@@ -163,6 +166,7 @@ export default function Home() {
     setMedLog(mlogMap)
 
     setReminders(remindersData || [])
+    setContactReminders(contactRemindersData || [])
     setBooks(booksData || [])
     setCourses(coursesData || [])
 
@@ -347,6 +351,11 @@ export default function Home() {
   async function dismissReminder(id) {
     await supabase.from('reminders').update({ done: true }).eq('id', id)
     setReminders(prev => prev.filter(r => r.id !== id))
+  }
+
+  async function completeContactReminder(id) {
+    await supabase.from('contact_reminders').update({ done: true }).eq('id', id)
+    setContactReminders(prev => prev.filter(r => r.id !== id))
   }
 
   async function enableNotifs() {
@@ -691,7 +700,7 @@ export default function Home() {
         </>
       )}
 
-      {(routineItems.length > 0 || medicines.length > 0) && (
+      {(routineItems.length > 0 || medicines.length > 0 || contactReminders.length > 0) && (
         <>
           <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '8px' }}>Today's schedule</div>
           {routineItems.map(routine => {
@@ -741,6 +750,18 @@ export default function Home() {
               <div onClick={e => { e.stopPropagation(); toggleMed(med) }} style={{ width: '22px', height: '22px', borderRadius: '50%', border: medLog[med.id] ? 'none' : '1.5px solid var(--border)', background: medLog[med.id] ? 'var(--health)' : 'none', cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#fff' }}>
                 {medLog[med.id] ? '✓' : ''}
               </div>
+            </div>
+          ))}
+          {contactReminders.map(reminder => (
+            <div key={reminder.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: 'var(--surf)', border: '0.5px solid var(--border)', borderLeft: '2px solid var(--social)', borderRadius: '0 8px 8px 0', marginBottom: '6px' }}>
+              <div style={{ width: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'var(--social)' }}>
+                <SocialSymbol size={20} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '13px', fontWeight: 500 }}>{reminder.title}</div>
+                <div style={{ fontSize: '11px', color: 'var(--muted2)' }}>{reminder.contacts?.name}</div>
+              </div>
+              <button onClick={() => completeContactReminder(reminder.id)} style={{ background: 'var(--social)', border: 'none', borderRadius: '6px', color: '#fff', fontSize: '11px', padding: '5px 10px', cursor: 'pointer', fontWeight: 500, flexShrink: 0 }}>Done</button>
             </div>
           ))}
         </>
