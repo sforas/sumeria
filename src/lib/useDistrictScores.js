@@ -37,7 +37,8 @@ export function useDistrictScores() {
         { data: applications },
         { data: books },
         { data: sessions },
-        { data: interactions },
+        { data: completedReminders },
+        { data: activeContacts },
         { data: sleep },
         { data: transactions },
         { data: journalEntries }
@@ -46,7 +47,8 @@ export function useDistrictScores() {
         supabase.from('applications').select('id'),
         supabase.from('books').select('pages_read'),
         supabase.from('study_sessions').select('minutes').gte('date', weekAgo),
-        supabase.from('interactions').select('id').gte('date', weekAgo),
+        supabase.from('contact_reminders').select('id').eq('done', true).gte('remind_on', monthAgo),
+        supabase.from('contacts').select('id').not('contact_frequency', 'is', null).neq('contact_frequency', 'none'),
         supabase.from('sleep_log').select('sleep_time, wake_time').gte('date', weekAgo),
         supabase.from('transactions').select('amount, type').eq('type', 'saving'),
         supabase.from('daily_journal').select('id').gte('date', monthAgo)
@@ -58,13 +60,14 @@ export function useDistrictScores() {
       const studyMins = (sessions || []).reduce((sum, s) => sum + (s.minutes || 0), 0)
       const goodSleepNights = (sleep || []).filter(s => sleepMinutes(s) >= 420).length
       const totalSaved = (transactions || []).reduce((sum, t) => sum + (t.amount || 0), 0)
+      const socialScore = ((completedReminders || []).length / 8 * 60) + ((activeContacts || []).length / 10 * 40)
 
       setScores({
         fitness: Math.min(100, ((workouts || []).length / 20) * 100),
         work: Math.min(100, ((applications || []).length / 30) * 100),
         reading: Math.min(100, (totalPagesRead / 500) * 100),
         learning: Math.min(100, (studyMins / 1200) * 100),
-        social: Math.min(100, ((interactions || []).length / 12) * 100),
+        social: Math.min(100, socialScore),
         health: Math.min(100, (goodSleepNights / 7) * 100),
         savings: Math.min(100, (totalSaved / 100000) * 100),
         journal: Math.min(100, ((journalEntries || []).length / 30) * 100)

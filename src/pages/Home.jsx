@@ -79,6 +79,7 @@ export default function Home() {
   const [editGoal, setEditGoal] = useState(null)
   const [modal, setModal] = useState(null)
   const [quickLog, setQuickLog] = useState({})
+  const [routineExercises, setRoutineExercises] = useState([])
   const [notifPerm, setNotifPerm] = useState(typeof Notification !== 'undefined' ? Notification.permission : 'denied')
 
   // Morning check states
@@ -222,6 +223,14 @@ export default function Home() {
     const isActive = !!activeTimers[routine.id]
     setModal({ routine, isActive, isDone })
     setQuickLog({})
+    setRoutineExercises([])
+    if (routine.quick_log_type === 'workout') {
+      supabase.from('routine_exercises')
+        .select('*')
+        .eq('routine_id', routine.id)
+        .order('order_index')
+        .then(({ data }) => setRoutineExercises(data || []))
+    }
   }
 
   async function startTimer(routine) {
@@ -541,6 +550,25 @@ export default function Home() {
               {/* WORKOUT & LEARNING — with timer */}
               {(type === 'workout' || type === 'learning') && (
                 <>
+                  {type === 'workout' && routineExercises.length > 0 && (
+                    <div style={{ marginBottom: '14px' }}>
+                      <div style={{ fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '8px' }}>
+                        Today's exercises
+                      </div>
+                      {routineExercises.map(ex => (
+                        <div key={ex.id} style={{
+                          display: 'flex', justifyContent: 'space-between',
+                          alignItems: 'center', padding: '7px 0',
+                          borderBottom: '0.5px solid var(--border)'
+                        }}>
+                          <div style={{ fontSize: '13px', color: 'var(--text)' }}>{ex.name}</div>
+                          <div style={{ fontSize: '12px', color: 'var(--fit)', fontWeight: 500 }}>
+                            {ex.sets} × {ex.reps}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   <button onClick={() => startTimer(routine)} style={{ width: '100%', background: 'var(--fit)', border: 'none', borderRadius: '8px', color: '#000', fontSize: '15px', padding: '14px', cursor: 'pointer', fontWeight: 700, marginBottom: '10px' }}>
                     Start
                   </button>

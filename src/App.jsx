@@ -56,7 +56,7 @@ export default function App() {
 
 useEffect(() => {
   const now = new Date()
-  const isLastDay = now.getMonth() === 11 && now.getDate() === 28
+  const isLastDay = now.getMonth() === 11 && now.getDate() === 31
   const isEvening = now.getHours() >= 20
   const reviewKey = `sumeria_yearly_review_${currentYear()}`
   const alreadySeen = localStorage.getItem(reviewKey)

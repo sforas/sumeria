@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, Tooltip } from 'recharts'
+import WeeklyReview from './WeeklyReview'
+import MonthlyReview from './MonthlyReview'
+import YearlyReview from './YearlyReview'
 
 function today() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
@@ -20,11 +23,20 @@ function yearStart() {
   return today().slice(0, 4) + '-01-01'
 }
 
+function monthAgo() {
+  const d = new Date()
+  d.setDate(d.getDate() - 30)
+  return d.toISOString().slice(0, 10)
+}
+
 export default function Overview() {
   const [period, setPeriod] = useState('week')
   const [scores, setScores] = useState(null)
   const [loading, setLoading] = useState(true)
   const [insight, setInsight] = useState('')
+  const [showWeekly, setShowWeekly] = useState(false)
+  const [showMonthly, setShowMonthly] = useState(false)
+  const [showYearly, setShowYearly] = useState(false)
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchScores() }, [period])
@@ -39,7 +51,8 @@ export default function Overview() {
       { data: meals },
       { data: _books },
       { data: sessions },
-      { data: interactions },
+      { data: completedReminders },
+      { data: activeContacts },
       { data: sleep },
       { data: medLog },
       { data: transactions }
@@ -49,7 +62,8 @@ export default function Overview() {
       supabase.from('meals').select('date').gte('date', from),
       supabase.from('books').select('pages_read, status'),
       supabase.from('study_sessions').select('minutes').gte('date', from),
-      supabase.from('interactions').select('date').gte('date', from),
+      supabase.from('contact_reminders').select('id').eq('done', true).gte('remind_on', monthAgo()),
+      supabase.from('contacts').select('id').not('contact_frequency', 'is', null).neq('contact_frequency', 'none'),
       supabase.from('sleep_log').select('sleep_time, wake_time').gte('date', from),
       supabase.from('med_log').select('taken').gte('date', from),
       supabase.from('transactions').select('amount, type').gte('date', from)
@@ -81,10 +95,12 @@ export default function Overview() {
     const studyTarget = period === 'week' ? 300 : period === 'month' ? 1200 : 14400
     const learnScore = Math.min(Math.round(studyMins / studyTarget * 100), 100)
 
-    // Social score
-    const socialCount = interactions?.length || 0
-    const socialTarget = period === 'week' ? 3 : period === 'month' ? 12 : 144
-    const socialScore = Math.min(Math.round(socialCount / socialTarget * 100), 100)
+    // Social score — 60% from contact_reminders completed in the last 30 days (goal: 8),
+    // 40% from contacts with an active contact_frequency set (goal: 10). Not period-scoped:
+    // it's inherently a rolling 30-day + current-snapshot metric, same as the skyline's version.
+    const completedCount = completedReminders?.length || 0
+    const activeContactCount = activeContacts?.length || 0
+    const socialScore = Math.min(Math.round((completedCount / 8 * 60) + (activeContactCount / 10 * 40)), 100)
 
     // Health score — only averages components that actually have data,
     // so a period with no medicines/sleep logged isn't silently scored 0.
@@ -242,6 +258,21 @@ export default function Overview() {
           </div>
         </>
       )}
+
+      <div style={{ marginTop: '20px' }}>
+        <div style={{ fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '10px' }}>
+          Annals of Sumeria
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px' }}>
+          <button onClick={() => setShowWeekly(true)} style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '8px', padding: '12px 8px', color: 'var(--acc)', fontSize: '12px', cursor: 'pointer', fontWeight: 500 }}>Weekly</button>
+          <button onClick={() => setShowMonthly(true)} style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '8px', padding: '12px 8px', color: 'var(--acc)', fontSize: '12px', cursor: 'pointer', fontWeight: 500 }}>Monthly</button>
+          <button onClick={() => setShowYearly(true)} style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '8px', padding: '12px 8px', color: 'var(--acc)', fontSize: '12px', cursor: 'pointer', fontWeight: 500 }}>Yearly</button>
+        </div>
+      </div>
+
+      {showWeekly && <WeeklyReview onClose={() => setShowWeekly(false)} />}
+      {showMonthly && <MonthlyReview onClose={() => setShowMonthly(false)} />}
+      {showYearly && <YearlyReview onClose={() => setShowYearly(false)} />}
     </div>
   )
 }

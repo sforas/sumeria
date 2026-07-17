@@ -67,9 +67,30 @@ export default function Fitness() {
   const [newWorkout, setNewWorkout] = useState({ type: 'Calisthenics', duration_min: '', notes: '' })
   const [newWeight, setNewWeight] = useState('')
   const [prs, setPrs] = useState([])
+  const [todayRoutines, setTodayRoutines] = useState([])
+  const [completedSets, setCompletedSets] = useState({})
   const photoInputRef = useRef(null)
 
-  useEffect(() => { fetchData(); fetchPhotos() }, [])
+  useEffect(() => { fetchData(); fetchPhotos(); fetchTodayRoutines() }, [])
+
+  async function fetchTodayRoutines() {
+    const dayOfWeek = new Date().getDay()
+    const { data } = await supabase.from('routines')
+      .select('*, routine_exercises(*)')
+      .eq('active', true)
+      .eq('quick_log_type', 'workout')
+      .order('order_index', { foreignTable: 'routine_exercises' })
+    const todays = (data || []).filter(r => r.days_of_week.split(',').map(Number).includes(dayOfWeek))
+    setTodayRoutines(todays)
+  }
+
+  function toggleSet(exId, setIndex) {
+    setCompletedSets(prev => {
+      const current = prev[exId] || 0
+      const newVal = setIndex < current ? setIndex : setIndex + 1
+      return { ...prev, [exId]: newVal }
+    })
+  }
 
   async function fetchData() {
     const [{ data: w }, { data: wl }, { data: p }] = await Promise.all([
@@ -198,7 +219,10 @@ export default function Fitness() {
   const pushupHistory = prs.filter(p => p.exercise === 'Push-ups').slice(0, 8).reverse()
   const pullupHistory = prs.filter(p => p.exercise === 'Pull-ups').slice(0, 8).reverse()
 
-  const views = ['day', 'week', 'month', 'ytd']
+  const todayExercises = todayRoutines.flatMap(r => r.routine_exercises || [])
+  const allSetsComplete = todayExercises.length > 0 && todayExercises.every(ex => (completedSets[ex.id] || 0) >= ex.sets)
+
+  const views = ['day', 'week', 'month', 'ytd', 'routine']
 
   return (
     <div style={{ padding: '16px', paddingBottom: '24px' }}>
@@ -517,6 +541,51 @@ export default function Fitness() {
                 <PRChart data={pushupHistory} color="var(--fit)" label="Push-ups all time" />
                 <PRChart data={pullupHistory} color="#4A9EE8" label="Pull-ups all time" />
               </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ROUTINE VIEW */}
+      {view === 'routine' && (
+        <>
+          {todayRoutines.length === 0 && (
+            <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '16px', textAlign: 'center', color: 'var(--muted)', fontSize: '13px' }}>
+              No workout routine scheduled today
+            </div>
+          )}
+          {todayRoutines.map(routine => (
+            <div key={routine.id} style={{ marginBottom: '20px' }}>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--fit)', marginBottom: '10px' }}>{routine.title}</div>
+              {(routine.routine_exercises || []).map(ex => {
+                const done = completedSets[ex.id] || 0
+                return (
+                  <div key={ex.id} style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '12px 13px', marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                      <div style={{ fontSize: '13px', color: 'var(--text)' }}>{ex.name}</div>
+                      <div style={{ fontSize: '12px', color: 'var(--fit)', fontWeight: 700 }}>{ex.sets} × {ex.reps}</div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
+                      {Array.from({ length: ex.sets }).map((_, setIndex) => (
+                        <div key={setIndex} onClick={() => toggleSet(ex.id, setIndex)} style={{
+                          width: '18px', height: '18px', borderRadius: '50%',
+                          border: '1.5px solid var(--border)',
+                          background: setIndex < done ? 'var(--fit)' : 'none',
+                          cursor: 'pointer'
+                        }} />
+                      ))}
+                    </div>
+                    <div style={{ height: '3px', background: 'var(--surf3)', borderRadius: '2px', overflow: 'hidden' }}>
+                      <div style={{ width: `${(done / ex.sets) * 100}%`, height: '100%', background: 'var(--fit)', borderRadius: '2px', transition: 'width .2s' }} />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ))}
+          {allSetsComplete && (
+            <div style={{ textAlign: 'center', color: 'var(--fit)', fontSize: '13px', fontWeight: 500, padding: '16px 0' }}>
+              All sets complete. Great work.
             </div>
           )}
         </>
