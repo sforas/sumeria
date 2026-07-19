@@ -180,9 +180,15 @@ export default function Home({ onNavigate }) {
     setJournal(j)
 
     // Show morning checks if not done yet
+    const todayKey = today()
+    const energyDoneToday = localStorage.getItem(`sumeria_energy_${todayKey}`)
+    const priorityDoneToday = localStorage.getItem(`sumeria_priority_${todayKey}`)
     const h = new Date().getHours()
-    if (!j?.energy && h < 14) setShowEnergyCheck(true)
-    else if (!j?.priority && h < 14) setShowPriorityCheck(true)
+    if (!j?.energy && !energyDoneToday && h < 14) {
+      setShowEnergyCheck(true)
+    } else if (!j?.priority && !priorityDoneToday && h < 14) {
+      setShowPriorityCheck(true)
+    }
 
     const timers = {}
     const elapsedInit = {}
@@ -206,6 +212,7 @@ export default function Home({ onNavigate }) {
       const { data } = await supabase.from('daily_journal').insert({ date: today(), energy: energyInput }).select().single()
       setJournal(data)
     }
+    localStorage.setItem(`sumeria_energy_${today()}`, 'true')
     setShowEnergyCheck(false)
     if (!journal?.priority) setShowPriorityCheck(true)
   }
@@ -220,6 +227,7 @@ export default function Home({ onNavigate }) {
       const { data } = await supabase.from('daily_journal').insert({ date: today(), priority: priorityInput }).select().single()
       setJournal(data)
     }
+    localStorage.setItem(`sumeria_priority_${today()}`, 'true')
     setShowPriorityCheck(false)
   }
 
@@ -629,7 +637,7 @@ export default function Home({ onNavigate }) {
           style={{ width: '100%', maxWidth: '300px', background: energyInput ? 'var(--xp)' : 'var(--surf3)', border: 'none', borderRadius: '10px', color: energyInput ? '#000' : 'var(--muted)', fontSize: '14px', padding: '14px', cursor: energyInput ? 'pointer' : 'default', fontWeight: 600 }}>
           Start my day →
         </button>
-        <button onClick={() => { setShowEnergyCheck(false); setShowPriorityCheck(true) }}
+        <button onClick={() => { localStorage.setItem(`sumeria_energy_${today()}`, 'true'); setShowEnergyCheck(false); setShowPriorityCheck(true) }}
           style={{ marginTop: '12px', background: 'none', border: 'none', color: 'var(--muted)', fontSize: '12px', cursor: 'pointer' }}>
           Skip
         </button>
@@ -655,7 +663,7 @@ export default function Home({ onNavigate }) {
           style={{ width: '100%', maxWidth: '340px', background: priorityInput.trim() ? 'var(--acc)' : 'var(--surf3)', border: 'none', borderRadius: '10px', color: priorityInput.trim() ? '#fff' : 'var(--muted)', fontSize: '14px', padding: '14px', cursor: priorityInput.trim() ? 'pointer' : 'default', fontWeight: 600 }}>
           Let's go →
         </button>
-        <button onClick={() => setShowPriorityCheck(false)}
+        <button onClick={() => { localStorage.setItem(`sumeria_priority_${today()}`, 'true'); setShowPriorityCheck(false) }}
           style={{ marginTop: '12px', background: 'none', border: 'none', color: 'var(--muted)', fontSize: '12px', cursor: 'pointer' }}>
           Skip
         </button>
