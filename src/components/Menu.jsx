@@ -1,18 +1,20 @@
 import ZigguratLogo from './icons/ZigguratLogo'
+import CalendarIcon from './icons/CalendarIcon'
 import {
   FitnessSymbol, WorkSymbol, ReadingSymbol, LearningSymbol, SocialSymbol,
   HealthSymbol, SavingsSymbol, JournalSymbol, OverviewSymbol
 } from './icons/DistrictSymbols'
 
 const FLOORS = [
-  { id: 'overview', label: 'Overview', Icon: OverviewSymbol, color: 'var(--acc)', width: 48 },
-  { id: 'fitness', label: 'Fitness', Icon: FitnessSymbol, color: 'var(--fit)', width: 58 },
+  { id: 'overview', label: 'Overview', Icon: OverviewSymbol, color: 'var(--acc)', width: 45 },
+  { id: 'calendar', label: 'Calendar', Icon: CalendarIcon, color: 'var(--sand)', width: 52 },
+  { id: 'fitness', label: 'Fitness', Icon: FitnessSymbol, color: 'var(--fit)', width: 59 },
   { id: 'work', label: 'Work', Icon: WorkSymbol, color: 'var(--work)', width: 66 },
   { id: 'reading', label: 'Reading', Icon: ReadingSymbol, color: 'var(--read)', width: 73 },
-  { id: 'learning', label: 'Learning', Icon: LearningSymbol, color: 'var(--learn)', width: 80 },
-  { id: 'social', label: 'Social', Icon: SocialSymbol, color: 'var(--social)', width: 87 },
-  { id: 'health', label: 'Healthcare', Icon: HealthSymbol, color: 'var(--health)', width: 93 },
-  { id: 'savings', label: 'Savings', Icon: SavingsSymbol, color: 'var(--savings)', width: 97 },
+  { id: 'learning', label: 'Learning', Icon: LearningSymbol, color: 'var(--learn)', width: 79 },
+  { id: 'social', label: 'Social', Icon: SocialSymbol, color: 'var(--social)', width: 85 },
+  { id: 'health', label: 'Healthcare', Icon: HealthSymbol, color: 'var(--health)', width: 91 },
+  { id: 'savings', label: 'Savings', Icon: SavingsSymbol, color: 'var(--savings)', width: 96 },
   { id: 'journal', label: 'Journal', Icon: JournalSymbol, color: 'var(--journal)', width: 100 }
 ]
 
@@ -67,7 +69,7 @@ export default function Menu({ onNavigate, onClose }) {
           >
             <div style={{ display: 'flex', alignItems: 'center' }}>
               <div style={{ color: f.color, display: 'flex', alignItems: 'center' }}>
-                <f.Icon size={28} />
+                <f.Icon size={28} color={f.color} />
               </div>
               <span style={{
                 marginLeft: '10px', fontSize: '11px',

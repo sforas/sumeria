@@ -13,6 +13,7 @@ import Healthcare from './pages/Healthcare'
 import Savings from './pages/Savings'
 import Journal from './pages/Journal'
 import Overview from './pages/Overview'
+import Calendar from './pages/Calendar'
 import WeeklyReview from './pages/WeeklyReview'
 import MonthlyReview from './pages/MonthlyReview'
 import YearlyReview from './pages/YearlyReview'
@@ -78,7 +79,7 @@ function currentYear() {
     }}>
       <Topbar onMenuOpen={() => setMenuOpen(true)} activeTab={activeTab} onHome={() => setActiveTab('home')} />
       <div style={{ flex: 1, overflowY: 'auto' }}>
-        {activeTab === 'home' && <Home />}
+        {activeTab === 'home' && <Home onNavigate={tab => setActiveTab(tab)} />}
         {activeTab === 'fitness' && <Fitness />}
         {activeTab === 'work' && <Work />}
         {activeTab === 'reading' && <Reading />}
@@ -88,6 +89,7 @@ function currentYear() {
         {activeTab === 'savings' && <Savings />}
         {activeTab === 'journal' && <Journal />}
         {activeTab === 'overview' && <Overview />}
+        {activeTab === 'calendar' && <Calendar />}
       </div>
       {menuOpen && (
         <Menu

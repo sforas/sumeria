@@ -33,6 +33,7 @@ const AREA_COLORS = {
   fitness: 'var(--fit)', work: 'var(--work)', diet: 'var(--diet)',
   reading: 'var(--read)', learning: 'var(--learn)', social: 'var(--social)',
   health: 'var(--health)', savings: 'var(--savings)',
+  other: 'var(--sand)', general: 'var(--sand)',
 }
 
 const AREA_ICONS = {
@@ -56,7 +57,7 @@ function formatElapsed(ms) {
   return `${mins}m`
 }
 
-export default function Home() {
+export default function Home({ onNavigate }) {
   useAtmosphere()
   const { scores } = useDistrictScores()
 
@@ -72,6 +73,7 @@ export default function Home() {
   const [books, setBooks] = useState([])
   const [courses, setCourses] = useState([])
   const [journal, setJournal] = useState(null)
+  const [upcomingEvents, setUpcomingEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [newGoal, setNewGoal] = useState('')
   const [newArea, setNewArea] = useState('fitness')
@@ -122,7 +124,8 @@ export default function Home() {
       { data: timersData },
       { data: booksData },
       { data: coursesData },
-      { data: journalData }
+      { data: journalData },
+      { data: upcomingEventsData }
     ] = await Promise.all([
       supabase.from('goals').select('*').eq('date', today()).order('created_at'),
       supabase.from('routines').select('*').eq('active', true),
@@ -134,7 +137,8 @@ export default function Home() {
       supabase.from('activity_timers').select('*').eq('date', today()).is('ended_at', null),
       supabase.from('books').select('*').eq('status', 'reading'),
       supabase.from('courses').select('*').eq('status', 'active'),
-      supabase.from('daily_journal').select('*').eq('date', today()).single()
+      supabase.from('daily_journal').select('*').eq('date', today()).single(),
+      supabase.from('calendar_events').select('*').gte('date', today()).order('date', { ascending: true }).limit(3)
     ])
 
     const currentHour = new Date().getHours()
@@ -170,6 +174,7 @@ export default function Home() {
     setContactReminders(contactRemindersData || [])
     setBooks(booksData || [])
     setCourses(coursesData || [])
+    setUpcomingEvents(upcomingEventsData || [])
 
     const j = journalData || null
     setJournal(j)
@@ -794,6 +799,42 @@ export default function Home() {
           ))}
         </>
       )}
+
+      <div style={{ marginBottom: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+          <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px' }}>
+            Upcoming
+          </div>
+          <button onClick={() => onNavigate('calendar')}
+            style={{ background: 'none', border: 'none', color: 'var(--acc)', fontSize: '11px', cursor: 'pointer' }}>
+            View calendar →
+          </button>
+        </div>
+        {upcomingEvents.length === 0 ? (
+          <div style={{ fontSize: '12px', color: 'var(--muted2)', padding: '8px 0' }}>No upcoming events</div>
+        ) : (
+          upcomingEvents.map(ev => (
+            <div key={ev.id} style={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              padding: '7px 10px', background: 'var(--surf)',
+              border: '0.5px solid var(--border)',
+              borderLeft: `2px solid ${AREA_COLORS[ev.area] || 'var(--sand)'}`,
+              borderRadius: '0 7px 7px 0', marginBottom: '4px'
+            }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text)' }}>{ev.title}</div>
+                <div style={{ fontSize: '10px', color: 'var(--muted2)', marginTop: '1px' }}>
+                  {new Date(ev.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                  {ev.time ? ` · ${ev.time}` : ''}
+                </div>
+              </div>
+              <div style={{ fontSize: '9px', color: AREA_COLORS[ev.area] || 'var(--sand)', textTransform: 'uppercase', letterSpacing: '.3px' }}>
+                {ev.area}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
 
       <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px', margin: '12px 0 8px' }}>Daily goals</div>
 
