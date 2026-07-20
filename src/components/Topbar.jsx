@@ -1,6 +1,7 @@
 import ZigguratLogo from './icons/ZigguratLogo'
+import CalendarIcon from './icons/CalendarIcon'
 
-export default function Topbar({ onMenuOpen, activeTab, onHome }) {
+export default function Topbar({ onMenuOpen, activeTab, onHome, onCalendar }) {
   const sectionColors = {
     home: 'var(--acc)', fitness: 'var(--fit)', work: 'var(--work)',
     reading: 'var(--read)', learning: 'var(--learn)', social: 'var(--social)',
@@ -39,13 +40,26 @@ export default function Topbar({ onMenuOpen, activeTab, onHome }) {
         )}
       </button>
 
-      {activeTab !== 'home' && (
-        <button onClick={onHome} style={{
-          background: 'var(--surf3)', border: `0.5px solid ${accentColor}44`,
-          borderRadius: '6px', color: accentColor, fontSize: '11px',
-          padding: '5px 12px', cursor: 'pointer'
-        }}>⌂ Home</button>
-      )}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <button
+          onClick={onCalendar}
+          style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '4px',
+            opacity: activeTab === 'calendar' ? 1 : 0.6
+          }}>
+          <CalendarIcon size={22} color="var(--sand)" />
+        </button>
+
+        {activeTab !== 'home' && (
+          <button onClick={onHome} style={{
+            background: 'var(--surf3)', border: `0.5px solid ${accentColor}44`,
+            borderRadius: '6px', color: accentColor, fontSize: '11px',
+            padding: '5px 12px', cursor: 'pointer'
+          }}>⌂ Home</button>
+        )}
+      </div>
     </div>
   )
 }

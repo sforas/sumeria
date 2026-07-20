@@ -77,9 +77,14 @@ function currentYear() {
       display: 'flex', flexDirection: 'column',
       maxWidth: '430px', margin: '0 auto'
     }}>
-      <Topbar onMenuOpen={() => setMenuOpen(true)} activeTab={activeTab} onHome={() => setActiveTab('home')} />
+      <Topbar
+        onMenuOpen={() => setMenuOpen(true)}
+        activeTab={activeTab}
+        onHome={() => setActiveTab('home')}
+        onCalendar={() => setActiveTab('calendar')}
+      />
       <div style={{ flex: 1, overflowY: 'auto' }}>
-        {activeTab === 'home' && <Home onNavigate={tab => setActiveTab(tab)} />}
+        {activeTab === 'home' && <Home />}
         {activeTab === 'fitness' && <Fitness />}
         {activeTab === 'work' && <Work />}
         {activeTab === 'reading' && <Reading />}
