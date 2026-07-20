@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { FitnessSymbol, WorkSymbol, ReadingSymbol, LearningSymbol, SocialSymbol, HealthSymbol } from '../components/icons/DistrictSymbols'
+import ZigguratLogo from '../components/icons/ZigguratLogo'
 
 function currentYear() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' }).slice(0, 4)
@@ -8,8 +10,6 @@ function currentYear() {
 function lastYear() {
   return String(parseInt(currentYear()) - 1)
 }
-
-const MOOD_EMOJIS = ['', '😞', '😕', '😐', '😊', '🤩']
 
 export default function YearlyReview({ onClose }) {
   const [stats, setStats] = useState(null)
@@ -117,11 +117,11 @@ export default function YearlyReview({ onClose }) {
 
     // Biggest stat
     const bigStats = [
-      { label: 'workouts', value: workoutCount, emoji: '💪' },
-      { label: 'pages read', value: totalPages, emoji: '📚' },
-      { label: 'study hours', value: Math.floor(studyMins / 60), emoji: '🧠' },
-      { label: 'job applications', value: appCount, emoji: '💼' },
-      { label: 'social interactions', value: socialCount, emoji: '👥' },
+      { label: 'workouts', value: workoutCount, Icon: FitnessSymbol, color: 'var(--fit)' },
+      { label: 'pages read', value: totalPages, Icon: ReadingSymbol, color: 'var(--read)' },
+      { label: 'study hours', value: Math.floor(studyMins / 60), Icon: LearningSymbol, color: 'var(--learn)' },
+      { label: 'job applications', value: appCount, Icon: WorkSymbol, color: 'var(--work)' },
+      { label: 'social interactions', value: socialCount, Icon: SocialSymbol, color: 'var(--social)' },
     ].sort((a, b) => b.value - a.value)[0]
 
     // Best streak — count consecutive days with routine done
@@ -175,7 +175,7 @@ export default function YearlyReview({ onClose }) {
   if (loading) {
     return (
       <div style={{ position: 'fixed', inset: 0, background: '#0a0a0a', zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '16px' }}>
-        <div style={{ fontSize: '48px' }}>✨</div>
+        <ZigguratLogo size={48} color="var(--sand)" />
         <div style={{ fontSize: '18px', fontWeight: 500, color: 'var(--text)' }}>Building your year...</div>
         <div style={{ fontSize: '13px', color: 'var(--muted)' }}>Collecting all your memories</div>
       </div>
@@ -185,7 +185,7 @@ export default function YearlyReview({ onClose }) {
   const slides = [
     // SLIDE 0 — Intro
     <div key={0} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', textAlign: 'center', padding: '40px 20px' }}>
-      <div style={{ fontSize: '64px', marginBottom: '20px' }}>✨</div>
+      <div style={{ marginBottom: '20px' }}><ZigguratLogo size={56} color="var(--sand)" /></div>
       <div style={{ fontSize: '13px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '10px' }}>Your year in</div>
       <div style={{ fontSize: '42px', fontWeight: 700, letterSpacing: '4px', marginBottom: '8px' }}>SUME<span style={{ color: 'var(--xp)' }}>RIA</span></div>
       <div style={{ fontSize: '28px', fontWeight: 300, color: 'var(--muted2)', marginBottom: '32px' }}>{stats.year}</div>
@@ -197,7 +197,9 @@ export default function YearlyReview({ onClose }) {
     // SLIDE 1 — Biggest stat
     <div key={1} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', textAlign: 'center', padding: '40px 20px' }}>
       <div style={{ fontSize: '11px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '24px' }}>Your biggest achievement</div>
-      <div style={{ fontSize: '80px', marginBottom: '16px' }}>{stats.bigStats?.emoji}</div>
+      <div style={{ color: stats.bigStats?.color, display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+        {stats.bigStats?.Icon && <stats.bigStats.Icon size={72} />}
+      </div>
       <div style={{ fontSize: '72px', fontWeight: 800, color: 'var(--xp)', lineHeight: 1, marginBottom: '8px' }}>{stats.bigStats?.value}</div>
       <div style={{ fontSize: '20px', color: 'var(--muted2)', marginBottom: '32px' }}>{stats.bigStats?.label}</div>
       <div style={{ fontSize: '13px', color: 'var(--muted)', maxWidth: '280px', lineHeight: 1.7 }}>
@@ -208,7 +210,9 @@ export default function YearlyReview({ onClose }) {
     // SLIDE 2 — Fitness
     <div key={2} style={{ padding: '40px 24px', minHeight: '80vh' }}>
       <div style={{ fontSize: '11px', color: 'var(--fit)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px' }}>Fitness</div>
-      <div style={{ fontSize: '32px', fontWeight: 700, marginBottom: '32px' }}>You showed up 💪</div>
+      <div style={{ fontSize: '32px', fontWeight: 700, marginBottom: '32px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+        You showed up <span style={{ color: 'var(--fit)', display: 'flex' }}><FitnessSymbol size={18} /></span>
+      </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '24px' }}>
         {[
           { label: 'Total workouts', value: stats.workoutCount, color: 'var(--fit)', big: true },
@@ -229,7 +233,9 @@ export default function YearlyReview({ onClose }) {
     // SLIDE 3 — Mind & Learning
     <div key={3} style={{ padding: '40px 24px', minHeight: '80vh' }}>
       <div style={{ fontSize: '11px', color: 'var(--learn)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px' }}>Mind</div>
-      <div style={{ fontSize: '32px', fontWeight: 700, marginBottom: '32px' }}>You kept learning 🧠</div>
+      <div style={{ fontSize: '32px', fontWeight: 700, marginBottom: '32px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+        You kept learning <span style={{ color: 'var(--learn)', display: 'flex' }}><LearningSymbol size={18} /></span>
+      </div>
       <div style={{ marginBottom: '20px' }}>
         <div style={{ fontSize: '64px', fontWeight: 800, color: 'var(--read)', lineHeight: 1 }}>{stats.booksFinished}</div>
         <div style={{ fontSize: '16px', color: 'var(--muted2)', marginTop: '4px' }}>books finished</div>
@@ -247,7 +253,9 @@ export default function YearlyReview({ onClose }) {
     // SLIDE 4 — Work & Social
     <div key={4} style={{ padding: '40px 24px', minHeight: '80vh' }}>
       <div style={{ fontSize: '11px', color: 'var(--work)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px' }}>Work & Social</div>
-      <div style={{ fontSize: '32px', fontWeight: 700, marginBottom: '32px' }}>You put yourself out there 💼</div>
+      <div style={{ fontSize: '32px', fontWeight: 700, marginBottom: '32px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+        You put yourself out there <span style={{ color: 'var(--work)', display: 'flex' }}><WorkSymbol size={18} /></span>
+      </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '24px' }}>
         {[
           { label: 'Applications', value: stats.appCount, color: 'var(--work)', bg: 'rgba(155,143,255,0.06)', border: 'rgba(155,143,255,0.2)' },
@@ -266,7 +274,9 @@ export default function YearlyReview({ onClose }) {
     // SLIDE 5 — Wellbeing
     <div key={5} style={{ padding: '40px 24px', minHeight: '80vh' }}>
       <div style={{ fontSize: '11px', color: 'var(--health)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px' }}>Wellbeing</div>
-      <div style={{ fontSize: '32px', fontWeight: 700, marginBottom: '32px' }}>You took care of yourself 💊</div>
+      <div style={{ fontSize: '32px', fontWeight: 700, marginBottom: '32px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+        You took care of yourself <span style={{ color: 'var(--health)', display: 'flex' }}><HealthSymbol size={18} /></span>
+      </div>
       <div style={{ marginBottom: '24px' }}>
         <div style={{ fontSize: '11px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '8px' }}>Average sleep</div>
         <div style={{ fontSize: '52px', fontWeight: 800, color: 'var(--acc)' }}>
@@ -275,7 +285,7 @@ export default function YearlyReview({ onClose }) {
       </div>
       <div style={{ marginBottom: '24px' }}>
         <div style={{ fontSize: '11px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '8px' }}>Average mood</div>
-        <div style={{ fontSize: '52px' }}>{stats.avgMood > 0 ? MOOD_EMOJIS[Math.round(stats.avgMood)] : '—'}</div>
+        <div style={{ fontSize: '52px', fontWeight: 800, color: 'var(--acc)' }}>{stats.avgMood > 0 ? Math.round(stats.avgMood) : '—'}</div>
         <div style={{ fontSize: '20px', color: 'var(--muted2)', marginTop: '4px' }}>{stats.avgMood > 0 ? `${stats.avgMood.toFixed(1)} / 5` : ''}</div>
       </div>
       <div>
@@ -288,7 +298,10 @@ export default function YearlyReview({ onClose }) {
     // SLIDE 6 — Wins
     <div key={6} style={{ padding: '40px 24px', minHeight: '80vh' }}>
       <div style={{ fontSize: '11px', color: 'var(--xp)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px' }}>Your wins</div>
-      <div style={{ fontSize: '32px', fontWeight: 700, marginBottom: '24px' }}>Moments that mattered 🏆</div>
+      <div style={{ fontSize: '32px', fontWeight: 700, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+        Moments that mattered
+        <span style={{ fontSize: '13px', color: 'var(--xp)', fontWeight: 500 }}>Win</span>
+      </div>
       {stats.wins.length > 0 ? (
         stats.wins.slice(0, 6).map((w, i) => (
           <div key={i} style={{
@@ -307,7 +320,10 @@ export default function YearlyReview({ onClose }) {
     // SLIDE 7 — Challenge + close
     <div key={7} style={{ padding: '40px 24px', minHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
       <div style={{ fontSize: '11px', color: 'var(--acc)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px' }}>Looking ahead</div>
-      <div style={{ fontSize: '32px', fontWeight: 700, marginBottom: '12px' }}>What's next? 🎯</div>
+      <div style={{ fontSize: '32px', fontWeight: 700, marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+        What's next?
+        <span style={{ fontSize: '13px', color: 'var(--acc)' }}>Priority</span>
+      </div>
       <div style={{ fontSize: '14px', color: 'var(--muted2)', marginBottom: '32px', lineHeight: 1.7 }}>
         You've had an incredible year. What's the one big thing you want to achieve in {parseInt(stats.year) + 1}?
       </div>
@@ -340,7 +356,7 @@ export default function YearlyReview({ onClose }) {
               border: 'none', borderRadius: '12px', color: '#fff',
               fontSize: '15px', padding: '14px', cursor: 'pointer', fontWeight: 600, marginBottom: '12px'
             }}>
-              Save my goal ✨
+              Save my goal
             </button>
           </>
         )}
@@ -351,7 +367,7 @@ export default function YearlyReview({ onClose }) {
         borderRadius: '12px', color: 'var(--muted)', fontSize: '13px',
         padding: '13px', cursor: 'pointer', marginTop: '12px'
       }}>
-        Close — See you next year 👋
+        Close — See you next year
       </button>
     </div>
   ]

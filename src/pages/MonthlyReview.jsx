@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer } from 'recharts'
+import { FitnessSymbol, WorkSymbol, ReadingSymbol, LearningSymbol, SocialSymbol, SavingsSymbol } from '../components/icons/DistrictSymbols'
+import SleepIcon from '../components/icons/SleepIcon'
 
 function lastMonth() {
   const d = new Date()
@@ -12,8 +14,6 @@ function monthName(ym) {
   const [y, m] = ym.split('-')
   return new Date(y, m - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 }
-
-const MOOD_EMOJIS = ['', '😞', '😕', '😐', '😊', '🤩']
 
 export default function MonthlyReview({ onClose }) {
   const [stats, setStats] = useState(null)
@@ -169,7 +169,6 @@ export default function MonthlyReview({ onClose }) {
   if (loading) {
     return (
       <div style={{ position: 'fixed', inset: 0, background: 'var(--bg)', zIndex: 400, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '12px' }}>
-        <div style={{ fontSize: '32px' }}>📊</div>
         <div style={{ color: 'var(--muted)', fontSize: '14px' }}>Building your monthly report...</div>
       </div>
     )
@@ -218,7 +217,7 @@ export default function MonthlyReview({ onClose }) {
         {/* Fitness */}
         <div style={{ background: 'var(--surf)', border: '0.5px solid #2DCE9A22', borderRadius: '14px', padding: '16px', marginBottom: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
-            <span style={{ fontSize: '20px' }}>💪</span>
+            <div style={{ color: 'var(--fit)', display: 'flex' }}><FitnessSymbol size={18} /></div>
             <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--fit)' }}>Fitness</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '10px', marginBottom: '12px' }}>
@@ -248,7 +247,7 @@ export default function MonthlyReview({ onClose }) {
         {/* Work */}
         <div style={{ background: 'var(--surf)', border: '0.5px solid #9B8FFF22', borderRadius: '14px', padding: '16px', marginBottom: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
-            <span style={{ fontSize: '20px' }}>💼</span>
+            <div style={{ color: 'var(--work)', display: 'flex' }}><WorkSymbol size={18} /></div>
             <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--work)' }}>Work</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px' }}>
@@ -268,7 +267,7 @@ export default function MonthlyReview({ onClose }) {
         {/* Reading + Learning */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
           <div style={{ background: 'var(--surf)', border: '0.5px solid #C8A83A22', borderRadius: '14px', padding: '14px' }}>
-            <div style={{ fontSize: '20px', marginBottom: '8px' }}>📚</div>
+            <div style={{ color: 'var(--read)', display: 'flex', marginBottom: '8px' }}><ReadingSymbol size={18} /></div>
             <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--read)' }}>{stats.booksFinished}</div>
             <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>Books finished</div>
             {stats.currentBooks.length > 0 && (
@@ -276,7 +275,7 @@ export default function MonthlyReview({ onClose }) {
             )}
           </div>
           <div style={{ background: 'var(--surf)', border: '0.5px solid #4A9EE822', borderRadius: '14px', padding: '14px' }}>
-            <div style={{ fontSize: '20px', marginBottom: '8px' }}>🧠</div>
+            <div style={{ color: 'var(--learn)', display: 'flex', marginBottom: '8px' }}><LearningSymbol size={18} /></div>
             <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--learn)' }}>{Math.floor(stats.studyMins / 60)}h</div>
             <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>Study time</div>
             <div style={{ fontSize: '11px', color: 'var(--muted2)', marginTop: '6px' }}>{stats.sessionCount} sessions</div>
@@ -286,7 +285,7 @@ export default function MonthlyReview({ onClose }) {
         {/* Social */}
         <div style={{ background: 'var(--surf)', border: '0.5px solid #D46FA022', borderRadius: '14px', padding: '16px', marginBottom: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-            <span style={{ fontSize: '20px' }}>👥</span>
+            <div style={{ color: 'var(--social)', display: 'flex' }}><SocialSymbol size={18} /></div>
             <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--social)' }}>Social</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -304,7 +303,7 @@ export default function MonthlyReview({ onClose }) {
         {/* Sleep + mood */}
         <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '14px', padding: '16px', marginBottom: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-            <span style={{ fontSize: '20px' }}>😴</span>
+            <div style={{ color: 'var(--acc)', display: 'flex' }}><SleepIcon size={18} color="var(--acc)" /></div>
             <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--acc)' }}>Wellbeing</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px' }}>
@@ -319,7 +318,7 @@ export default function MonthlyReview({ onClose }) {
               <div style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '2px' }}>Good nights</div>
             </div>
             <div>
-              <div style={{ fontSize: '20px' }}>{stats.avgMood > 0 ? MOOD_EMOJIS[Math.round(stats.avgMood)] : '—'}</div>
+              <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--acc)' }}>{stats.avgMood > 0 ? Math.round(stats.avgMood) : '—'}</div>
               <div style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '2px' }}>Avg mood {stats.avgMood > 0 ? stats.avgMood.toFixed(1) : ''}</div>
             </div>
           </div>
@@ -328,7 +327,7 @@ export default function MonthlyReview({ onClose }) {
         {/* Savings */}
         <div style={{ background: 'var(--surf)', border: '0.5px solid #27AE6022', borderRadius: '14px', padding: '16px', marginBottom: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-            <span style={{ fontSize: '20px' }}>💰</span>
+            <div style={{ color: 'var(--savings)', display: 'flex' }}><SavingsSymbol size={18} /></div>
             <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--savings)' }}>Savings</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -346,7 +345,7 @@ export default function MonthlyReview({ onClose }) {
         {/* Wins */}
         {stats.wins.length > 0 && (
           <div style={{ background: 'linear-gradient(135deg, var(--surf2), var(--bg))', border: '0.5px solid #EF9F2744', borderRadius: '14px', padding: '16px', marginBottom: '14px' }}>
-            <div style={{ fontSize: '11px', color: 'var(--xp)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '10px' }}>🏆 Monthly wins</div>
+            <div style={{ fontSize: '11px', color: 'var(--xp)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '10px' }}><span style={{ fontWeight: 500 }}>Win</span> · Monthly wins</div>
             {stats.wins.slice(0, 5).map((w, i) => (
               <div key={i} style={{ display: 'flex', gap: '10px', padding: '8px 0', borderBottom: i < stats.wins.length - 1 ? '0.5px solid var(--border)' : 'none' }}>
                 <div style={{ fontSize: '11px', color: 'var(--muted)', flexShrink: 0, minWidth: '45px' }}>{w.date?.slice(5)}</div>
@@ -358,7 +357,7 @@ export default function MonthlyReview({ onClose }) {
 
         {/* Next month challenge */}
         <div style={{ background: 'var(--surf)', border: '0.5px solid var(--acc)44', borderRadius: '14px', padding: '16px', marginBottom: '16px' }}>
-          <div style={{ fontSize: '11px', color: 'var(--acc)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '6px' }}>🎯 Challenge for next month</div>
+          <div style={{ fontSize: '11px', color: 'var(--acc)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '6px' }}>Priority · Challenge for next month</div>
           <div style={{ fontSize: '12px', color: 'var(--muted2)', marginBottom: '12px' }}>What's the one thing you want to achieve next month?</div>
           {saved ? (
             <>
@@ -370,7 +369,7 @@ export default function MonthlyReview({ onClose }) {
               <input placeholder="Next month I will..." value={challenge} onChange={e => setChallenge(e.target.value)}
                 style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '8px', color: 'var(--text)', fontSize: '13px', padding: '10px 12px', outline: 'none', marginBottom: '10px' }} />
               <button onClick={saveReview} style={{ width: '100%', background: 'var(--acc)', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '13px', padding: '11px', cursor: 'pointer', fontWeight: 500 }}>
-                Save & close month ✓
+                Save & close month
               </button>
             </>
           )}

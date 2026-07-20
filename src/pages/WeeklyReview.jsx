@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { FitnessSymbol, WorkSymbol, ReadingSymbol, LearningSymbol, SocialSymbol, SavingsSymbol } from '../components/icons/DistrictSymbols'
+import SleepIcon from '../components/icons/SleepIcon'
 
 function lastWeekStart() {
   const d = new Date()
@@ -16,8 +18,6 @@ function lastWeekEnd() {
   const sunday = new Date(d.setDate(diff))
   return sunday.toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
 }
-
-const MOOD_EMOJIS = ['', '😞', '😕', '😐', '😊', '🤩']
 
 export default function WeeklyReview({ onClose }) {
   const [stats, setStats] = useState(null)
@@ -154,15 +154,15 @@ export default function WeeklyReview({ onClose }) {
 
         {/* Highlights */}
         <div style={{ background: 'linear-gradient(135deg, #0e0d1c, #061410)', border: '0.5px solid var(--border)', borderRadius: '14px', padding: '18px', marginBottom: '16px' }}>
-          <div style={{ fontSize: '11px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '12px' }}>✨ Week highlights</div>
+          <div style={{ fontSize: '11px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '12px' }}>Week highlights</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
             {[
-              { emoji: '💪', value: stats.workoutCount, label: 'Workouts' },
-              { emoji: '📚', value: stats.totalPagesRead, label: 'Pages read' },
-              { emoji: '🧠', value: `${Math.floor(stats.studyMins / 60)}h`, label: 'Study time' },
+              { Icon: FitnessSymbol, color: 'var(--fit)', value: stats.workoutCount, label: 'Workouts' },
+              { Icon: ReadingSymbol, color: 'var(--read)', value: stats.totalPagesRead, label: 'Pages read' },
+              { Icon: LearningSymbol, color: 'var(--learn)', value: `${Math.floor(stats.studyMins / 60)}h`, label: 'Study time' },
             ].map((h, i) => (
               <div key={i} style={{ textAlign: 'center', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', padding: '12px 8px' }}>
-                <div style={{ fontSize: '24px', marginBottom: '4px' }}>{h.emoji}</div>
+                <div style={{ color: h.color, display: 'flex', justifyContent: 'center', marginBottom: '4px' }}><h.Icon size={18} /></div>
                 <div style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text)' }}>{h.value}</div>
                 <div style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '2px' }}>{h.label}</div>
               </div>
@@ -173,7 +173,7 @@ export default function WeeklyReview({ onClose }) {
         {/* Fitness */}
         <div style={{ background: 'var(--surf)', border: '0.5px solid var(--fit)22', borderRadius: '12px', padding: '14px 16px', marginBottom: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-            <span style={{ fontSize: '18px' }}>💪</span>
+            <div style={{ color: 'var(--fit)', display: 'flex' }}><FitnessSymbol size={18} /></div>
             <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--fit)' }}>Fitness</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '8px' }}>
@@ -201,7 +201,7 @@ export default function WeeklyReview({ onClose }) {
         {/* Work */}
         <div style={{ background: 'var(--surf)', border: '0.5px solid var(--work)22', borderRadius: '12px', padding: '14px 16px', marginBottom: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-            <span style={{ fontSize: '18px' }}>💼</span>
+            <div style={{ color: 'var(--work)', display: 'flex' }}><WorkSymbol size={18} /></div>
             <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--work)' }}>Work</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '8px' }}>
@@ -220,13 +220,13 @@ export default function WeeklyReview({ onClose }) {
         {/* Reading + Learning */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
           <div style={{ background: 'var(--surf)', border: '0.5px solid var(--read)22', borderRadius: '12px', padding: '14px' }}>
-            <div style={{ fontSize: '18px', marginBottom: '6px' }}>📚</div>
+            <div style={{ color: 'var(--read)', display: 'flex', marginBottom: '6px' }}><ReadingSymbol size={18} /></div>
             <div style={{ fontSize: '10px', color: 'var(--muted)', marginBottom: '4px' }}>Pages read</div>
             <div style={{ fontSize: '22px', fontWeight: 600, color: 'var(--read)' }}>{stats.totalPagesRead}</div>
-            {stats.booksFinished > 0 && <div style={{ fontSize: '11px', color: 'var(--muted2)', marginTop: '3px' }}>{stats.booksFinished} book{stats.booksFinished > 1 ? 's' : ''} finished 🎉</div>}
+            {stats.booksFinished > 0 && <div style={{ fontSize: '11px', color: 'var(--muted2)', marginTop: '3px' }}>{stats.booksFinished} book{stats.booksFinished > 1 ? 's' : ''} finished</div>}
           </div>
           <div style={{ background: 'var(--surf)', border: '0.5px solid var(--learn)22', borderRadius: '12px', padding: '14px' }}>
-            <div style={{ fontSize: '18px', marginBottom: '6px' }}>🧠</div>
+            <div style={{ color: 'var(--learn)', display: 'flex', marginBottom: '6px' }}><LearningSymbol size={18} /></div>
             <div style={{ fontSize: '10px', color: 'var(--muted)', marginBottom: '4px' }}>Study time</div>
             <div style={{ fontSize: '22px', fontWeight: 600, color: 'var(--learn)' }}>{Math.floor(stats.studyMins / 60)}h {stats.studyMins % 60}m</div>
           </div>
@@ -235,12 +235,12 @@ export default function WeeklyReview({ onClose }) {
         {/* Social + Sleep + Savings */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px', marginBottom: '10px' }}>
           {[
-            { emoji: '👥', label: 'Interactions', value: stats.socialCount, color: 'var(--social)' },
-            { emoji: '😴', label: 'Avg sleep', value: stats.avgSleepMins > 0 ? `${Math.floor(stats.avgSleepMins/60)}h${Math.round(stats.avgSleepMins%60)}m` : '—', color: 'var(--acc)' },
-            { emoji: '💰', label: 'Saved', value: stats.weekSaved > 0 ? `$${Math.round(stats.weekSaved/1000)}k` : '—', color: 'var(--savings)' },
+            { Icon: SocialSymbol, label: 'Interactions', value: stats.socialCount, color: 'var(--social)' },
+            { Icon: SleepIcon, label: 'Avg sleep', value: stats.avgSleepMins > 0 ? `${Math.floor(stats.avgSleepMins/60)}h${Math.round(stats.avgSleepMins%60)}m` : '—', color: 'var(--acc)' },
+            { Icon: SavingsSymbol, label: 'Saved', value: stats.weekSaved > 0 ? `$${Math.round(stats.weekSaved/1000)}k` : '—', color: 'var(--savings)' },
           ].map((s, i) => (
             <div key={i} style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '12px', padding: '12px', textAlign: 'center' }}>
-              <div style={{ fontSize: '20px', marginBottom: '4px' }}>{s.emoji}</div>
+              <div style={{ color: s.color, display: 'flex', justifyContent: 'center', marginBottom: '4px' }}><s.Icon size={18} color={s.color} /></div>
               <div style={{ fontSize: '16px', fontWeight: 600, color: s.color }}>{s.value}</div>
               <div style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '2px' }}>{s.label}</div>
             </div>
@@ -250,7 +250,7 @@ export default function WeeklyReview({ onClose }) {
         {/* Mood */}
         {stats.avgMood > 0 && (
           <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '12px', padding: '14px 16px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ fontSize: '28px' }}>{MOOD_EMOJIS[Math.round(stats.avgMood)]}</div>
+            <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--acc)' }}>{Math.round(stats.avgMood)}</div>
             <div>
               <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '2px' }}>Average mood this week</div>
               <div style={{ fontSize: '16px', fontWeight: 500 }}>{stats.avgMood.toFixed(1)} / 5</div>
@@ -261,14 +261,14 @@ export default function WeeklyReview({ onClose }) {
         {/* Best win */}
         {stats.bestWin && (
           <div style={{ background: 'linear-gradient(135deg, var(--surf2), var(--bg))', border: '0.5px solid var(--xp)44', borderRadius: '12px', padding: '14px 16px', marginBottom: '16px' }}>
-            <div style={{ fontSize: '11px', color: 'var(--xp)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '6px' }}>🏆 Highlight of the week</div>
+            <div style={{ fontSize: '11px', color: 'var(--xp)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '6px' }}><span style={{ fontWeight: 500 }}>Win</span> · Highlight of the week</div>
             <div style={{ fontSize: '14px', lineHeight: 1.6 }}>"{stats.bestWin}"</div>
           </div>
         )}
 
         {/* Next week challenge */}
         <div style={{ background: 'var(--surf)', border: '0.5px solid var(--acc)44', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
-          <div style={{ fontSize: '11px', color: 'var(--acc)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '8px' }}>🎯 Challenge for next week</div>
+          <div style={{ fontSize: '11px', color: 'var(--acc)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '8px' }}>Priority · Challenge for next week</div>
           <div style={{ fontSize: '12px', color: 'var(--muted2)', marginBottom: '10px' }}>One thing you want to improve or accomplish next week</div>
           {saved ? (
             <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text)', lineHeight: 1.6 }}>"{challenge}"</div>
@@ -281,7 +281,7 @@ export default function WeeklyReview({ onClose }) {
                 style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '8px', color: 'var(--text)', fontSize: '13px', padding: '10px 12px', outline: 'none', marginBottom: '10px' }}
               />
               <button onClick={saveReview} style={{ width: '100%', background: 'var(--acc)', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '13px', padding: '11px', cursor: 'pointer', fontWeight: 500 }}>
-                Save & close week ✓
+                Save & close week
               </button>
             </>
           )}
