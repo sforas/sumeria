@@ -82,6 +82,9 @@ export default function Home({ onNavigate }) {
   const [modal, setModal] = useState(null)
   const [quickLog, setQuickLog] = useState({})
   const [routineExercises, setRoutineExercises] = useState([])
+  const [showExercisesDuringTimer, setShowExercisesDuringTimer] = useState(true)
+  const [restTimer, setRestTimer] = useState(0)
+  const [restInterval, setRestInterval] = useState(null)
   const [notifPerm, setNotifPerm] = useState(typeof Notification !== 'undefined' ? Notification.permission : 'denied')
 
   // Morning check states
@@ -255,6 +258,7 @@ export default function Home({ onNavigate }) {
     setActiveTimers(prev => ({ ...prev, [routine.id]: now }))
     setElapsed(prev => ({ ...prev, [routine.id]: 0 }))
     setModal(null)
+    setShowExercisesDuringTimer(true)
   }
 
   async function finishTimer(routine) {
@@ -267,6 +271,10 @@ export default function Home({ onNavigate }) {
     setActiveTimers(prev => { const n = { ...prev }; delete n[routine.id]; return n })
     setElapsed(prev => { const n = { ...prev }; delete n[routine.id]; return n })
     setModal(null)
+    setShowExercisesDuringTimer(true)
+    clearInterval(restInterval)
+    setRestTimer(0)
+    setRestInterval(null)
   }
 
   async function completeRoutine(routine, data = {}) {
@@ -331,6 +339,7 @@ export default function Home({ onNavigate }) {
     setRoutineLog(prev => ({ ...prev, [routine.id]: { ...prev[routine.id], done: true } }))
     await supabase.from('xp_log').insert({ amount: 50, reason: `Routine: ${routine.title}`, date: today() })
     setModal(null)
+    setShowExercisesDuringTimer(true)
   }
 
   async function toggleGoal(goal) {
@@ -400,7 +409,7 @@ export default function Home({ onNavigate }) {
     const elapsedMs = elapsed[routine.id] || 0
 
     return (
-      <div onClick={() => setModal(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.75)', display: 'flex', alignItems: 'flex-end', zIndex: 200 }}>
+      <div onClick={() => { setModal(null); setShowExercisesDuringTimer(true) }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.75)', display: 'flex', alignItems: 'flex-end', zIndex: 200 }}>
         <div onClick={e => e.stopPropagation()} style={{ background: 'var(--surf)', borderRadius: '14px 14px 0 0', padding: '20px 18px 40px', width: '100%', maxHeight: '85vh', overflowY: 'auto' }}>
 
           <div style={{ fontSize: '15px', fontWeight: 500, marginBottom: '3px' }}>{routine.title}</div>
@@ -416,6 +425,99 @@ export default function Home({ onNavigate }) {
           {/* TIMER RUNNING */}
           {isActive && (
             <>
+              {type === 'workout' && (
+                <div style={{ marginBottom: '14px' }}>
+                  <div
+                    onClick={() => setShowExercisesDuringTimer(prev => !prev)}
+                    style={{
+                      display: 'flex', alignItems: 'center',
+                      justifyContent: 'space-between',
+                      fontSize: '10px', color: 'var(--muted)',
+                      textTransform: 'uppercase', letterSpacing: '.6px',
+                      marginBottom: showExercisesDuringTimer ? '8px' : '0',
+                      cursor: 'pointer', padding: '4px 0'
+                    }}>
+                    <span>Today's routine</span>
+                    <span>{showExercisesDuringTimer ? '▲' : '▼'}</span>
+                  </div>
+
+                  {showExercisesDuringTimer && routineExercises.map(ex => (
+                    <div key={ex.id} style={{
+                      display: 'flex', justifyContent: 'space-between',
+                      alignItems: 'center', padding: '7px 0',
+                      borderBottom: '0.5px solid var(--border)'
+                    }}>
+                      <div style={{ fontSize: '13px', color: 'var(--text)' }}>
+                        {ex.name}
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'var(--fit)', fontWeight: 500 }}>
+                        {ex.sets} × {ex.reps}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {type === 'workout' && (
+                <div style={{
+                  background: 'var(--surf3)', borderRadius: '8px',
+                  padding: '12px', marginBottom: '14px',
+                  textAlign: 'center'
+                }}>
+                  <div style={{
+                    fontSize: '10px', color: 'var(--muted)',
+                    textTransform: 'uppercase', letterSpacing: '.6px',
+                    marginBottom: '8px'
+                  }}>
+                    Rest timer
+                  </div>
+
+                  {restTimer > 0 ? (
+                    <div>
+                      <div style={{
+                        fontSize: '32px', fontWeight: 600,
+                        color: restTimer <= 10 ? 'var(--danger)' : 'var(--fit)',
+                        marginBottom: '8px'
+                      }}>
+                        {Math.floor(restTimer / 60)}:{String(restTimer % 60).padStart(2, '0')}
+                      </div>
+                      <button
+                        onClick={() => { clearInterval(restInterval); setRestTimer(0) }}
+                        style={{
+                          background: 'none', border: '0.5px solid var(--border)',
+                          borderRadius: '6px', color: 'var(--muted)',
+                          fontSize: '11px', padding: '4px 12px', cursor: 'pointer'
+                        }}>
+                        Skip rest
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                      {[60, 90, 120, 180].map(secs => (
+                        <button key={secs}
+                          onClick={() => {
+                            setRestTimer(secs)
+                            const interval = setInterval(() => {
+                              setRestTimer(prev => {
+                                if (prev <= 1) { clearInterval(interval); return 0 }
+                                return prev - 1
+                              })
+                            }, 1000)
+                            setRestInterval(interval)
+                          }}
+                          style={{
+                            background: 'var(--surf)', border: '0.5px solid var(--border)',
+                            borderRadius: '6px', color: 'var(--muted)',
+                            fontSize: '11px', padding: '6px 10px', cursor: 'pointer'
+                          }}>
+                          {secs >= 60 ? `${secs/60}min` : `${secs}s`}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div style={{ textAlign: 'center', marginBottom: '20px', padding: '16px', background: 'var(--surf3)', borderRadius: '10px' }}>
                 <div style={{ fontSize: '40px', fontWeight: 500, color: 'var(--fit)' }}>{formatElapsed(elapsedMs)}</div>
                 <div style={{ fontSize: '12px', color: 'var(--muted2)', marginTop: '4px' }}>Timer running</div>
@@ -452,7 +554,14 @@ export default function Home({ onNavigate }) {
               <button onClick={() => finishTimer(routine)} style={{ width: '100%', background: 'var(--fit)', border: 'none', borderRadius: '8px', color: '#000', fontSize: '14px', padding: '13px', cursor: 'pointer', fontWeight: 600, marginBottom: '8px' }}>
                 ✓ Finish — {formatElapsed(elapsedMs)}
               </button>
-              <button onClick={() => { setActiveTimers(prev => { const n = { ...prev }; delete n[routine.id]; return n }); setModal(null) }}
+              <button onClick={() => {
+                setActiveTimers(prev => { const n = { ...prev }; delete n[routine.id]; return n })
+                setModal(null)
+                setShowExercisesDuringTimer(true)
+                clearInterval(restInterval)
+                setRestTimer(0)
+                setRestInterval(null)
+              }}
                 style={{ width: '100%', background: 'none', border: '0.5px solid var(--border)', borderRadius: '8px', color: 'var(--danger)', fontSize: '13px', padding: '10px', cursor: 'pointer' }}>
                 Cancel timer
               </button>
