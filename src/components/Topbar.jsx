@@ -1,5 +1,6 @@
 import ZigguratLogo from './icons/ZigguratLogo'
 import CalendarIcon from './icons/CalendarIcon'
+import HomeIcon from './icons/HomeIcon'
 
 export default function Topbar({ onMenuOpen, activeTab, onHome, onCalendar }) {
   const sectionColors = {
@@ -30,8 +31,8 @@ export default function Topbar({ onMenuOpen, activeTab, onHome, onCalendar }) {
       }}>
         <ZigguratLogo size={28} color="var(--sand)" />
         {activeTab === 'home' ? (
-          <div style={{ fontSize: '14px', fontWeight: 500, letterSpacing: '2px', color: 'var(--text)' }}>
-            SUME<span style={{ color: 'var(--xp)' }}>RIA</span>
+          <div style={{ fontSize: '14px', fontWeight: 500, letterSpacing: '2px' }}>
+            <span style={{ color: 'var(--sand)' }}>SUMERIA</span>
           </div>
         ) : (
           <div style={{ fontSize: '14px', fontWeight: 500, color: accentColor }}>
@@ -41,6 +42,21 @@ export default function Topbar({ onMenuOpen, activeTab, onHome, onCalendar }) {
       </button>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {activeTab !== 'home' && (
+          <button onClick={onHome} style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '4px',
+            opacity: 0.8
+          }}>
+            <HomeIcon size={24} color="var(--sand)" />
+          </button>
+        )}
+
         <button
           onClick={onCalendar}
           style={{
@@ -51,14 +67,6 @@ export default function Topbar({ onMenuOpen, activeTab, onHome, onCalendar }) {
           }}>
           <CalendarIcon size={22} color="var(--sand)" />
         </button>
-
-        {activeTab !== 'home' && (
-          <button onClick={onHome} style={{
-            background: 'var(--surf3)', border: `0.5px solid ${accentColor}44`,
-            borderRadius: '6px', color: accentColor, fontSize: '11px',
-            padding: '5px 12px', cursor: 'pointer'
-          }}>⌂ Home</button>
-        )}
       </div>
     </div>
   )
