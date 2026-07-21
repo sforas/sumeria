@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer } from 'recharts'
 import { FitnessSymbol, WorkSymbol, ReadingSymbol, LearningSymbol, SocialSymbol, SavingsSymbol } from '../components/icons/DistrictSymbols'
 import SleepIcon from '../components/icons/SleepIcon'
+import ZigguratPicker from '../components/ZigguratPicker'
 
 function lastMonth() {
   const d = new Date()
@@ -306,7 +307,7 @@ export default function MonthlyReview({ onClose }) {
             <div style={{ color: 'var(--acc)', display: 'flex' }}><SleepIcon size={18} color="var(--acc)" /></div>
             <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--acc)' }}>Wellbeing</span>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '10px' }}>
             <div>
               <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--acc)' }}>
                 {stats.avgSleepMins > 0 ? `${Math.floor(stats.avgSleepMins/60)}h${Math.round(stats.avgSleepMins%60)}m` : '—'}
@@ -317,11 +318,23 @@ export default function MonthlyReview({ onClose }) {
               <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--fit)' }}>{stats.goodSleepNights}/{stats.sleepNights}</div>
               <div style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '2px' }}>Good nights</div>
             </div>
-            <div>
-              <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--acc)' }}>{stats.avgMood > 0 ? Math.round(stats.avgMood) : '—'}</div>
-              <div style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '2px' }}>Avg mood {stats.avgMood > 0 ? stats.avgMood.toFixed(1) : ''}</div>
-            </div>
           </div>
+          {(stats.avgMood > 0 || stats.avgEnergy > 0) && (
+            <div style={{ display: 'grid', gridTemplateColumns: stats.avgMood > 0 && stats.avgEnergy > 0 ? '1fr 1fr' : '1fr', gap: '10px', marginTop: '14px' }}>
+              {stats.avgMood > 0 && (
+                <div>
+                  <div style={{ fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '8px' }}>Avg mood</div>
+                  <ZigguratPicker value={Math.round(stats.avgMood)} onChange={() => {}} color="var(--social)" readOnly={true} />
+                </div>
+              )}
+              {stats.avgEnergy > 0 && (
+                <div>
+                  <div style={{ fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '8px' }}>Avg energy</div>
+                  <ZigguratPicker value={Math.round(stats.avgEnergy)} onChange={() => {}} color="var(--acc)" readOnly={true} />
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Savings */}

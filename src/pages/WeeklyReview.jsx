@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { FitnessSymbol, WorkSymbol, ReadingSymbol, LearningSymbol, SocialSymbol, SavingsSymbol } from '../components/icons/DistrictSymbols'
 import SleepIcon from '../components/icons/SleepIcon'
+import ZigguratPicker from '../components/ZigguratPicker'
 
 function lastWeekStart() {
   const d = new Date()
@@ -249,11 +250,10 @@ export default function WeeklyReview({ onClose }) {
 
         {/* Mood */}
         {stats.avgMood > 0 && (
-          <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '12px', padding: '14px 16px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--acc)' }}>{Math.round(stats.avgMood)}</div>
-            <div>
-              <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '2px' }}>Average mood this week</div>
-              <div style={{ fontSize: '16px', fontWeight: 500 }}>{stats.avgMood.toFixed(1)} / 5</div>
+          <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '12px', padding: '14px 16px', marginBottom: '10px' }}>
+            <div style={{ fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '8px' }}>Avg mood</div>
+            <div style={{ maxWidth: '160px', margin: '0 auto' }}>
+              <ZigguratPicker value={Math.round(stats.avgMood)} onChange={() => {}} color="var(--social)" readOnly={true} />
             </div>
           </div>
         )}

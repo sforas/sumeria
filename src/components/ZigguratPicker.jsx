@@ -8,7 +8,7 @@ const TERRACES = [
 
 const VALUE_LABELS = { 1: 'Very low', 2: 'Low', 3: 'Moderate', 4: 'Good', 5: 'Excellent' }
 
-export default function ZigguratPicker({ value, onChange, color = 'var(--acc)', label = '' }) {
+export default function ZigguratPicker({ value, onChange, color = 'var(--acc)', label = '', readOnly = false }) {
   return (
     <div>
       {label && (
@@ -19,15 +19,16 @@ export default function ZigguratPicker({ value, onChange, color = 'var(--acc)', 
         return (
           <div
             key={t.level}
-            onClick={() => onChange(t.level)}
+            onClick={readOnly ? undefined : () => onChange(t.level)}
             style={{
               width: `${t.width}%`,
               height: '20px',
               margin: '0 auto 2px',
               background: selected ? `color-mix(in srgb, ${color} 80%, transparent)` : 'var(--surf3)',
+              opacity: readOnly && !selected ? 0.2 : 1,
               border: `0.5px solid color-mix(in srgb, ${color} 40%, transparent)`,
               borderRadius: 0,
-              cursor: 'pointer',
+              cursor: readOnly ? 'default' : 'pointer',
               transition: 'background 0.15s'
             }}
           />

@@ -57,16 +57,26 @@ export default function Journal() {
 
       {/* Summary KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px', marginBottom: '14px' }}>
-        {[
-          { label: 'Entries', value: entries.length, color: 'var(--journal)' },
-          { label: 'Avg mood', value: avgMood > 0 ? `${avgMood.toFixed(1)}/5` : '—', color: 'var(--social)' },
-          { label: 'Avg energy', value: avgEnergy > 0 ? `${avgEnergy.toFixed(1)}/5` : '—', color: 'var(--xp)' },
-        ].map((k, i) => (
-          <div key={i} style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '11px 13px' }}>
-            <div style={{ fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '4px' }}>{k.label}</div>
-            <div style={{ fontSize: '18px', fontWeight: 500, color: k.color }}>{k.value}</div>
-          </div>
-        ))}
+        <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '11px 13px' }}>
+          <div style={{ fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '4px' }}>Entries</div>
+          <div style={{ fontSize: '18px', fontWeight: 500, color: 'var(--journal)' }}>{entries.length}</div>
+        </div>
+        <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '11px 13px' }}>
+          <div style={{ fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '4px' }}>Avg mood</div>
+          {avgMood > 0 ? (
+            <ZigguratPicker value={Math.round(avgMood)} onChange={() => {}} color="var(--social)" readOnly={true} />
+          ) : (
+            <div style={{ fontSize: '18px', fontWeight: 500, color: 'var(--social)' }}>—</div>
+          )}
+        </div>
+        <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '11px 13px' }}>
+          <div style={{ fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '4px' }}>Avg energy</div>
+          {avgEnergy > 0 ? (
+            <ZigguratPicker value={Math.round(avgEnergy)} onChange={() => {}} color="var(--acc)" readOnly={true} />
+          ) : (
+            <div style={{ fontSize: '18px', fontWeight: 500, color: 'var(--acc)' }}>—</div>
+          )}
+        </div>
       </div>
 
       {/* LOG VIEW */}
@@ -82,12 +92,38 @@ export default function Journal() {
             <div key={entry.id} style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '13px 14px', marginBottom: '10px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
                 <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--muted2)' }}>{entry.date}</div>
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                  {entry.mood && <span style={{ fontSize: '11px', color: 'var(--social)' }}>Mood {entry.mood}/5</span>}
-                  {entry.energy && <span style={{ fontSize: '11px', color: 'var(--xp)' }}>Energy {entry.energy}/5</span>}
-                  <button onClick={() => deleteEntry(entry.id)} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '16px' }}>×</button>
-                </div>
+                <button onClick={() => deleteEntry(entry.id)} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '16px' }}>×</button>
               </div>
+              {(entry.mood || entry.energy) && (
+                <div style={{ display: 'grid', gridTemplateColumns: entry.mood && entry.energy ? '1fr 1fr' : '1fr', gap: '10px', marginBottom: '8px' }}>
+                  {entry.mood && (
+                    <div>
+                      <div style={{ fontSize: '9px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '4px' }}>
+                        Mood
+                      </div>
+                      <ZigguratPicker
+                        value={entry.mood}
+                        onChange={() => {}}
+                        color="var(--social)"
+                        readOnly={true}
+                      />
+                    </div>
+                  )}
+                  {entry.energy && (
+                    <div>
+                      <div style={{ fontSize: '9px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '4px' }}>
+                        Energy
+                      </div>
+                      <ZigguratPicker
+                        value={entry.energy}
+                        onChange={() => {}}
+                        color="var(--acc)"
+                        readOnly={true}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
               {entry.priority && (
                 <div style={{ marginBottom: '8px' }}>
                   <div style={{ fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '3px' }}>Priority</div>

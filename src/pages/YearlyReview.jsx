@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { FitnessSymbol, WorkSymbol, ReadingSymbol, LearningSymbol, SocialSymbol, HealthSymbol } from '../components/icons/DistrictSymbols'
 import ZigguratLogo from '../components/icons/ZigguratLogo'
+import ZigguratPicker from '../components/ZigguratPicker'
 
 function currentYear() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' }).slice(0, 4)
@@ -285,8 +286,13 @@ export default function YearlyReview({ onClose }) {
       </div>
       <div style={{ marginBottom: '24px' }}>
         <div style={{ fontSize: '11px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '8px' }}>Average mood</div>
-        <div style={{ fontSize: '52px', fontWeight: 800, color: 'var(--acc)' }}>{stats.avgMood > 0 ? Math.round(stats.avgMood) : '—'}</div>
-        <div style={{ fontSize: '20px', color: 'var(--muted2)', marginTop: '4px' }}>{stats.avgMood > 0 ? `${stats.avgMood.toFixed(1)} / 5` : ''}</div>
+        {stats.avgMood > 0 ? (
+          <div style={{ maxWidth: '280px' }}>
+            <ZigguratPicker value={Math.round(stats.avgMood)} onChange={() => {}} color="var(--social)" readOnly={true} />
+          </div>
+        ) : (
+          <div style={{ fontSize: '52px', fontWeight: 800, color: 'var(--acc)' }}>—</div>
+        )}
       </div>
       <div>
         <div style={{ fontSize: '11px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '8px' }}>Journal entries</div>
