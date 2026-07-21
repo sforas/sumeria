@@ -3,6 +3,10 @@ import { supabase } from '../lib/supabase'
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
 import ZigguratPicker from '../components/ZigguratPicker'
 
+function today() {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
+}
+
 export default function Journal() {
   const [entries, setEntries] = useState([])
   const [loading, setLoading] = useState(true)
@@ -88,62 +92,87 @@ export default function Journal() {
               No journal entries yet — complete the evening reflection in Home
             </div>
           )}
-          {entries.map(entry => (
-            <div key={entry.id} style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '13px 14px', marginBottom: '10px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--muted2)' }}>{entry.date}</div>
-                <button onClick={() => deleteEntry(entry.id)} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '16px' }}>×</button>
+          {entries.map(entry => {
+            const isPendingToday = entry.date === today() && (!entry.mood || !entry.energy || !entry.win || !entry.gratitude)
+            return (
+              <div key={entry.id} style={{
+                background: 'var(--surf)',
+                border: '0.5px solid var(--border)',
+                borderRadius: '10px',
+                padding: '14px',
+                marginBottom: '12px'
+              }}>
+                {/* SECTION 1 — Date */}
+                <div style={{
+                  fontFamily: 'Georgia, serif', fontSize: '13px',
+                  color: 'var(--text)', fontWeight: 500,
+                  borderBottom: '0.5px solid var(--border)',
+                  paddingBottom: '10px', marginBottom: '12px'
+                }}>
+                  {new Date(entry.date + 'T12:00:00').toLocaleDateString('en-US', {
+                    weekday: 'long', month: 'long', day: 'numeric'
+                  })}
+                </div>
+
+                {/* SECTION 2 — Mood & Energy */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '12px' }}>
+                  <div>
+                    <div style={{ fontSize: '9px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '6px' }}>Mood</div>
+                    <ZigguratPicker value={entry.mood || 0} onChange={() => {}} color="var(--social)" readOnly={true} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '9px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '6px' }}>Energy</div>
+                    <ZigguratPicker value={entry.energy || 0} onChange={() => {}} color="var(--acc)" readOnly={true} />
+                  </div>
+                </div>
+
+                {/* SECTION 3 — Win */}
+                {entry.win && (
+                  <div style={{ marginBottom: '10px' }}>
+                    <div style={{ fontSize: '9px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '3px' }}>Win</div>
+                    <div style={{ fontSize: '13px', color: 'var(--text)', fontFamily: 'Georgia, serif', fontStyle: 'italic' }}>
+                      "{entry.win}"
+                    </div>
+                  </div>
+                )}
+
+                {/* SECTION 4 — Grateful for */}
+                {entry.gratitude && (
+                  <div style={{ marginBottom: '10px' }}>
+                    <div style={{ fontSize: '9px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '3px' }}>Grateful for</div>
+                    <div style={{ fontSize: '13px', color: 'var(--text)', fontFamily: 'Georgia, serif', fontStyle: 'italic' }}>
+                      "{entry.gratitude}"
+                    </div>
+                  </div>
+                )}
+
+                {/* SECTION 5 — Priority */}
+                {entry.priority && (
+                  <div style={{ marginBottom: '10px' }}>
+                    <div style={{ fontSize: '9px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '3px' }}>Priority</div>
+                    <div style={{ fontSize: '13px', color: 'var(--text)', fontFamily: 'Georgia, serif', fontStyle: 'italic' }}>
+                      {entry.priority}
+                    </div>
+                  </div>
+                )}
+
+                {/* SECTION 6 — Evening reflection pending (today only) */}
+                {isPendingToday && (
+                  <div style={{ fontSize: '11px', color: 'var(--muted2)', fontStyle: 'italic', marginTop: '4px' }}>
+                    Evening reflection pending
+                  </div>
+                )}
+
+                {/* SECTION 7 — Delete button */}
+                <div style={{ marginTop: '10px', textAlign: 'right' }}>
+                  <button onClick={() => deleteEntry(entry.id)}
+                    style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '11px' }}>
+                    Delete
+                  </button>
+                </div>
               </div>
-              {(entry.mood || entry.energy) && (
-                <div style={{ display: 'grid', gridTemplateColumns: entry.mood && entry.energy ? '1fr 1fr' : '1fr', gap: '10px', marginBottom: '8px' }}>
-                  {entry.mood && (
-                    <div>
-                      <div style={{ fontSize: '9px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '4px' }}>
-                        Mood
-                      </div>
-                      <ZigguratPicker
-                        value={entry.mood}
-                        onChange={() => {}}
-                        color="var(--social)"
-                        readOnly={true}
-                      />
-                    </div>
-                  )}
-                  {entry.energy && (
-                    <div>
-                      <div style={{ fontSize: '9px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '4px' }}>
-                        Energy
-                      </div>
-                      <ZigguratPicker
-                        value={entry.energy}
-                        onChange={() => {}}
-                        color="var(--acc)"
-                        readOnly={true}
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
-              {entry.priority && (
-                <div style={{ marginBottom: '8px' }}>
-                  <div style={{ fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '3px' }}>Priority</div>
-                  <div style={{ fontSize: '13px' }}>{entry.priority}</div>
-                </div>
-              )}
-              {entry.gratitude && (
-                <div style={{ marginBottom: '8px' }}>
-                  <div style={{ fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '3px' }}>Grateful for</div>
-                  <div style={{ fontSize: '13px' }}>{entry.gratitude}</div>
-                </div>
-              )}
-              {entry.win && (
-                <div>
-                  <div style={{ fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '3px' }}>Win</div>
-                  <div style={{ fontSize: '13px' }}>{entry.win}</div>
-                </div>
-              )}
-            </div>
-          ))}
+            )
+          })}
         </>
       )}
 
