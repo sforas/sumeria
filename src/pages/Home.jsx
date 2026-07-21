@@ -19,16 +19,6 @@ function getGreeting() {
   return 'Good evening'
 }
 
-const QUOTES = [
-  "The first cities were built by people who decided tomorrow was worth planning for.",
-  "A small daily task, if it be really daily, will beat the labours of a spasmodic Hercules.",
-  "We are what we repeatedly do. Excellence is not an act, but a habit.",
-  "Discipline is choosing between what you want now and what you want most.",
-  "The secret of getting ahead is getting started.",
-  "You don't have to be great to start, but you have to start to be great.",
-  "Small steps every day lead to big results over time.",
-]
-
 const AREA_COLORS = {
   fitness: 'var(--fit)', work: 'var(--work)', diet: 'var(--diet)',
   reading: 'var(--read)', learning: 'var(--learn)', social: 'var(--social)',
@@ -73,6 +63,9 @@ export default function Home() {
   const [books, setBooks] = useState([])
   const [courses, setCourses] = useState([])
   const [journal, setJournal] = useState(null)
+  const [mantra, setMantra] = useState('')
+  const [editingMantra, setEditingMantra] = useState(false)
+  const [mantraInput, setMantraInput] = useState('')
   const [loading, setLoading] = useState(true)
   const [newGoal, setNewGoal] = useState('')
   const [newArea, setNewArea] = useState('fitness')
@@ -92,7 +85,6 @@ export default function Home() {
   const [energyInput, setEnergyInput] = useState(0)
   const [priorityInput, setPriorityInput] = useState('')
 
-  const quote = QUOTES[new Date().getDay() % QUOTES.length]
   const dayOfWeek = new Date().getDay()
   const timerRef = useRef(null)
 
@@ -126,7 +118,8 @@ export default function Home() {
       { data: timersData },
       { data: booksData },
       { data: coursesData },
-      { data: journalData }
+      { data: journalData },
+      { data: mantraData }
     ] = await Promise.all([
       supabase.from('goals').select('*').eq('date', today()).order('created_at'),
       supabase.from('routines').select('*').eq('active', true),
@@ -138,7 +131,8 @@ export default function Home() {
       supabase.from('activity_timers').select('*').eq('date', today()).is('ended_at', null),
       supabase.from('books').select('*').eq('status', 'reading'),
       supabase.from('courses').select('*').eq('status', 'active'),
-      supabase.from('daily_journal').select('*').eq('date', today()).single()
+      supabase.from('daily_journal').select('*').eq('date', today()).single(),
+      supabase.from('settings').select('*').eq('key', 'mantra').single()
     ])
 
     const currentHour = new Date().getHours()
@@ -177,6 +171,7 @@ export default function Home() {
 
     const j = journalData || null
     setJournal(j)
+    setMantra(mantraData?.value || 'Build your city. Build yourself.')
 
     // Show morning checks if not done yet
     const todayKey = today()
@@ -826,10 +821,93 @@ export default function Home() {
         </div>
       )}
 
-      <div style={{ borderLeft: '2px solid var(--acc)', padding: '10px 13px', marginBottom: '14px', background: 'var(--surf)', borderRadius: '0 8px 8px 0', border: '0.5px solid var(--border)', borderLeftWidth: '2px', borderLeftColor: 'var(--acc)' }}>
-        <p style={{ fontSize: '12px', lineHeight: 1.65, marginBottom: '3px' }}>{quote}</p>
-        <span style={{ fontSize: '11px', color: 'var(--muted)' }}>— Sumerian wisdom</span>
-      </div>
+      {!editingMantra ? (
+        <div style={{
+          padding: '12px 14px',
+          marginBottom: '14px',
+          position: 'relative'
+        }}>
+          <div style={{
+            fontSize: '14px',
+            fontFamily: 'Georgia, serif',
+            fontStyle: 'italic',
+            color: 'var(--text)',
+            lineHeight: 1.7,
+            marginBottom: '6px'
+          }}>
+            "{mantra}"
+          </div>
+          <button
+            onClick={() => { setEditingMantra(true); setMantraInput(mantra) }}
+            style={{
+              background: 'none', border: 'none',
+              color: 'var(--muted2)', cursor: 'pointer',
+              fontSize: '10px', padding: '0',
+              textTransform: 'uppercase', letterSpacing: '.5px'
+            }}>
+            Edit mantra
+          </button>
+        </div>
+      ) : (
+        <div style={{
+          background: 'var(--surf)',
+          border: '0.5px solid var(--border)',
+          borderRadius: '10px',
+          padding: '13px 14px',
+          marginBottom: '14px'
+        }}>
+          <textarea
+            autoFocus
+            value={mantraInput}
+            onChange={e => setMantraInput(e.target.value)}
+            rows={3}
+            style={{
+              width: '100%',
+              background: 'var(--surf3)',
+              border: '0.5px solid var(--border)',
+              borderRadius: '7px',
+              color: 'var(--text)',
+              fontSize: '13px',
+              fontFamily: 'Georgia, serif',
+              fontStyle: 'italic',
+              padding: '9px 11px',
+              outline: 'none',
+              resize: 'none',
+              lineHeight: 1.6,
+              marginBottom: '10px'
+            }}
+          />
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={async () => {
+                if (!mantraInput.trim()) return
+                await supabase.from('settings')
+                  .upsert({ key: 'mantra', value: mantraInput.trim() })
+                setMantra(mantraInput.trim())
+                setEditingMantra(false)
+              }}
+              style={{
+                flex: 1, background: 'var(--acc)', border: 'none',
+                borderRadius: '7px', color: '#fff',
+                fontSize: '13px', padding: '9px',
+                cursor: 'pointer', fontWeight: 500
+              }}>
+              Save
+            </button>
+            <button
+              onClick={() => setEditingMantra(false)}
+              style={{
+                background: 'var(--surf3)',
+                border: '0.5px solid var(--border)',
+                borderRadius: '7px', color: 'var(--muted)',
+                fontSize: '13px', padding: '9px 14px',
+                cursor: 'pointer'
+              }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {reminders.length > 0 && (
         <>
