@@ -1,0 +1,86 @@
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
+  try {
+    const { title, body, url } = await req.json()
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
+    const { data: subscriptions, error } = await supabase
+      .from('push_subscriptions')
+      .select('*')
+
+    if (error) throw error
+    if (!subscriptions || subscriptions.length === 0) {
+      return new Response(
+        JSON.stringify({ message: 'No subscriptions found' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY') ?? ''
+    const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY') ?? ''
+    const vapidEmail = Deno.env.get('VAPID_EMAIL') ?? ''
+
+    const results = await Promise.allSettled(
+      subscriptions.map(async (sub) => {
+        const subscription = {
+          endpoint: sub.endpoint,
+          keys: {
+            p256dh: sub.p256dh,
+            auth: sub.auth,
+          },
+        }
+
+        const payload = JSON.stringify({ title, body, url: url || '/' })
+
+        // Use web-push via npm CDN
+        const webpush = await import('npm:web-push@3.6.7')
+        webpush.default.setVapidDetails(vapidEmail, vapidPublicKey, vapidPrivateKey)
+        await webpush.default.sendNotification(subscription, payload)
+      })
+    )
+
+    const failed = results.filter(r => r.status === 'rejected')
+    if (failed.length > 0) {
+      // Remove invalid subscriptions
+      for (const sub of subscriptions) {
+        try {
+          const webpush = await import('npm:web-push@3.6.7')
+          webpush.default.setVapidDetails(vapidEmail, vapidPublicKey, vapidPrivateKey)
+          await webpush.default.sendNotification({
+            endpoint: sub.endpoint,
+            keys: { p256dh: sub.p256dh, auth: sub.auth }
+          }, JSON.stringify({ title, body }))
+        } catch (err: any) {
+          if (err.statusCode === 410 || err.statusCode === 404) {
+            await supabase.from('push_subscriptions').delete().eq('endpoint', sub.endpoint)
+          }
+        }
+      }
+    }
+
+    return new Response(
+      JSON.stringify({ success: true, sent: subscriptions.length }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  } catch (err) {
+    return new Response(
+      JSON.stringify({ error: err.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  }
+})

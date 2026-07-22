@@ -1,24 +1,81 @@
-export const Notifs = {
-  async requestPermission() {
-    if (!('Notification' in window)) return false
-    const perm = await Notification.requestPermission()
-    return perm === 'granted'
-  },
+const VAPID_PUBLIC_KEY = 'BKvdYXXeytTepQbbcBom0gd1D0WFW6n2JVfo7c8TWMSRRn6Z4tOGiXhsw0XREuiiIalEe1tSCMZm7FtJ3sP4Kco'
 
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4)
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+  const rawData = window.atob(base64)
+  const outputArray = new Uint8Array(rawData.length)
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i)
+  }
+  return outputArray
+}
+
+async function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) return null
+  try {
+    const reg = await navigator.serviceWorker.register('/sw.js')
+    return reg
+  } catch (err) {
+    console.error('SW registration failed:', err)
+    return null
+  }
+}
+
+async function subscribeToPush(registration) {
+  try {
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+    })
+
+    // Save subscription to Supabase
+    const { supabase } = await import('./supabase')
+    const { endpoint, keys } = subscription.toJSON()
+    await supabase.from('push_subscriptions').upsert({
+      endpoint,
+      p256dh: keys.p256dh,
+      auth: keys.auth
+    }, { onConflict: 'endpoint' })
+
+    return subscription
+  } catch (err) {
+    console.error('Push subscription failed:', err)
+    return null
+  }
+}
+
+export async function sendPushNotification(title, body, url = '/') {
+  try {
+    const { supabase } = await import('./supabase')
+    await supabase.functions.invoke('send-push-notification', {
+      body: { title, body, url }
+    })
+  } catch (err) {
+    console.error('Failed to send push notification:', err)
+  }
+}
+
+export const Notifs = {
   async init() {
     if (!('Notification' in window)) return
-    // Only auto-schedules if permission was already granted in a past session —
-    // requestPermission() must be called from a user gesture (see enable()),
-    // browsers block or silently ignore it when called on page load.
     if (Notification.permission === 'granted') {
+      const reg = await registerServiceWorker()
+      if (reg) await subscribeToPush(reg)
       this.scheduleToday()
     }
   },
 
   async enable() {
-    const granted = await this.requestPermission()
-    if (granted) this.scheduleToday()
-    return granted
+    if (!('Notification' in window)) return false
+    const permission = await Notification.requestPermission()
+    if (permission !== 'granted') return false
+
+    const reg = await registerServiceWorker()
+    if (!reg) return false
+    await subscribeToPush(reg)
+    this.scheduleToday()
+    return true
   },
 
   scheduleToday() {
@@ -28,11 +85,11 @@ export const Notifs = {
     if (lastScheduled === todayKey) return
     localStorage.setItem('sumeria_notifs_date', todayKey)
 
-    // Morning notification — 7:00 AM
-    this.scheduleAt(7, 0, '☀️ Good morning!', 'Open Sumeria to set your priority and start your day.')
+    // Schedule morning notification — 7:00 AM
+    this.scheduleAt(7, 0, '☀️ Good morning', 'Open Sumeria to set your priority and start your day.')
 
-    // Evening reflection — 8:00 PM
-    this.scheduleAt(20, 0, '🌙 Evening reflection', "How was your day? Log your win and gratitude before bed.")
+    // Schedule evening reflection — 8:00 PM
+    this.scheduleAt(20, 0, '🌙 Evening reflection', "How was your day? Log your win and gratitude.")
 
     // Schedule medicine notifications
     this.scheduleMedicines()
@@ -44,13 +101,16 @@ export const Notifs = {
     fire.setHours(hour, minute, 0, 0)
     const delay = fire - now
     if (delay <= 0) return
-    setTimeout(() => {
-      new Notification(title, {
-        body,
-        icon: '/favicon.svg',
-        badge: '/favicon.svg',
-        vibrate: [200, 100, 200]
-      })
+
+    setTimeout(async () => {
+      // Try real push first, fall back to local
+      try {
+        await sendPushNotification(title, body)
+      } catch {
+        if (Notification.permission === 'granted') {
+          new Notification(title, { body, icon: '/favicon.svg' })
+        }
+      }
     }, delay)
   },
 
@@ -63,16 +123,17 @@ export const Notifs = {
         if (!med.time) return
         const [h, m] = med.time.split(':').map(Number)
         const notifyMin = med.notify_before_min || 15
-        const fireHour = h
-        const fireMins = m - notifyMin
-        const adjustedH = fireMins < 0 ? fireHour - 1 : fireHour
-        const adjustedM = fireMins < 0 ? 60 + fireMins : fireMins
+        let fireHour = h
+        let fireMins = m - notifyMin
+        if (fireMins < 0) { fireHour -= 1; fireMins += 60 }
         this.scheduleAt(
-          adjustedH, adjustedM,
-          `💊 Time for ${med.name}`,
-          `${med.dose}${med.with_food ? ' — take with food' : ''}`
+          fireHour, fireMins,
+          `Medicine reminder`,
+          `Time to take ${med.name} — ${med.dose}${med.with_food ? ' with food' : ''}`
         )
       })
-    } catch {}
+    } catch (err) {
+      console.error('Medicine scheduling failed:', err)
+    }
   }
 }

@@ -110,8 +110,8 @@ export default function Healthcare() {
 
 async function requestNotifs() {
   if (typeof Notification === 'undefined') return
-  await Notifs.enable()
-  setNotifPerm(Notification.permission)
+  const granted = await Notifs.enable()
+  setNotifPerm(granted ? 'granted' : 'denied')
 }
   const [medicines, setMedicines] = useState([])
   const [medLog, setMedLog] = useState({})
