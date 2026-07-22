@@ -142,7 +142,7 @@ export default function Home() {
       supabase.from('courses').select('*').eq('status', 'active'),
       supabase.from('daily_journal').select('*').eq('date', today()).single(),
       supabase.from('settings').select('*').eq('key', 'mantra').single(),
-      supabase.from('calendar_events').select('*').eq('date', today()).eq('done', false).order('time', { ascending: true, nullsFirst: false })
+      supabase.from('calendar_events').select('*').eq('date', today()).order('time', { ascending: true, nullsFirst: false })
     ])
 
     const currentHour = new Date().getHours()
@@ -498,7 +498,9 @@ export default function Home() {
 
   async function dismissCalendarEvent(id) {
     await supabase.from('calendar_events').update({ done: true }).eq('id', id)
-    setTodayCalendarEvents(prev => prev.filter(e => e.id !== id))
+    setTodayCalendarEvents(prev =>
+      prev.map(e => e.id === id ? { ...e, done: true } : e)
+    )
   }
 
   async function enableNotifs() {
@@ -1311,10 +1313,11 @@ export default function Home() {
               padding: '10px 12px', background: 'var(--surf)',
               border: '0.5px solid var(--border)',
               borderLeft: `2px solid ${AREA_COLORS[ev.area] || 'var(--sand)'}`,
-              borderRadius: '0 8px 8px 0', marginBottom: '6px'
+              borderRadius: '0 8px 8px 0', marginBottom: '6px',
+              opacity: ev.done ? 0.5 : 1
             }}>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text)' }}>
+                <div style={{ fontSize: '13px', fontWeight: 500, textDecoration: ev.done ? 'line-through' : 'none', color: ev.done ? 'var(--muted)' : 'var(--text)' }}>
                   {ev.title}
                 </div>
                 <div style={{ fontSize: '11px', color: 'var(--muted2)', marginTop: '1px' }}>
@@ -1329,16 +1332,18 @@ export default function Home() {
               }}>
                 {ev.area}
               </div>
-              <button onClick={() => dismissCalendarEvent(ev.id)}
+              <div onClick={() => !ev.done && dismissCalendarEvent(ev.id)}
                 style={{
-                  background: AREA_COLORS[ev.area] || 'var(--sand)',
-                  border: 'none', borderRadius: '6px',
-                  color: '#000', fontSize: '11px',
-                  padding: '5px 10px', cursor: 'pointer', fontWeight: 500,
-                  flexShrink: 0
+                  width: '22px', height: '22px', borderRadius: '50%',
+                  border: ev.done ? 'none' : '1.5px solid var(--border)',
+                  background: ev.done ? (AREA_COLORS[ev.area] || 'var(--sand)') : 'none',
+                  cursor: ev.done ? 'default' : 'pointer',
+                  flexShrink: 0, display: 'flex',
+                  alignItems: 'center', justifyContent: 'center',
+                  fontSize: '10px', color: '#000'
                 }}>
-                Done
-              </button>
+                {ev.done ? '✓' : ''}
+              </div>
             </div>
           ))}
         </>
