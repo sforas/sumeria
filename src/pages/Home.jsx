@@ -74,9 +74,15 @@ export default function Home() {
   const [modal, setModal] = useState(null)
   const [quickLog, setQuickLog] = useState({})
   const [routineExercises, setRoutineExercises] = useState([])
-  const [showExercisesDuringTimer, setShowExercisesDuringTimer] = useState(true)
+  const [workoutExercises, setWorkoutExercises] = useState([])
+  const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0)
+  const [currentSetIndex, setCurrentSetIndex] = useState(0)
+  const [setReps, setSetReps] = useState('')
+  const [completedSets, setCompletedSets] = useState({})
   const [restTimer, setRestTimer] = useState(0)
   const [restInterval, setRestInterval] = useState(null)
+  const [restType, setRestType] = useState(null)
+  const [workoutPhase, setWorkoutPhase] = useState('tracking')
   const [notifPerm, setNotifPerm] = useState(typeof Notification !== 'undefined' ? Notification.permission : 'denied')
 
   // Morning check states
@@ -87,6 +93,7 @@ export default function Home() {
 
   const dayOfWeek = new Date().getDay()
   const timerRef = useRef(null)
+  const repsInputRef = useRef(null)
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchAll() }, [])
@@ -236,7 +243,16 @@ export default function Home() {
         .select('*')
         .eq('routine_id', routine.id)
         .order('order_index')
-        .then(({ data }) => setRoutineExercises(data || []))
+        .then(({ data }) => {
+          setRoutineExercises(data || [])
+          setWorkoutExercises(data || [])
+          setCurrentExerciseIndex(0)
+          setCurrentSetIndex(0)
+          setCompletedSets({})
+          setWorkoutPhase('tracking')
+          setRestTimer(0)
+          setSetReps('')
+        })
     }
   }
 
@@ -249,7 +265,7 @@ export default function Home() {
     setActiveTimers(prev => ({ ...prev, [routine.id]: now }))
     setElapsed(prev => ({ ...prev, [routine.id]: 0 }))
     setModal(null)
-    setShowExercisesDuringTimer(true)
+    resetWorkoutState()
   }
 
   async function finishTimer(routine) {
@@ -262,7 +278,7 @@ export default function Home() {
     setActiveTimers(prev => { const n = { ...prev }; delete n[routine.id]; return n })
     setElapsed(prev => { const n = { ...prev }; delete n[routine.id]; return n })
     setModal(null)
-    setShowExercisesDuringTimer(true)
+    resetWorkoutState()
     clearInterval(restInterval)
     setRestTimer(0)
     setRestInterval(null)
@@ -330,7 +346,103 @@ export default function Home() {
     setRoutineLog(prev => ({ ...prev, [routine.id]: { ...prev[routine.id], done: true } }))
     await supabase.from('xp_log').insert({ amount: 50, reason: `Routine: ${routine.title}`, date: today() })
     setModal(null)
-    setShowExercisesDuringTimer(true)
+    resetWorkoutState()
+  }
+
+  function getCurrentExercise() {
+    return workoutExercises[currentExerciseIndex] || null
+  }
+
+  function getCompletedRepsForExercise(exId) {
+    return completedSets[exId] || []
+  }
+
+  function isSessionExercise(ex) {
+    return ex?.reps?.toLowerCase().includes('session')
+  }
+
+  function resetWorkoutState() {
+    setWorkoutPhase('tracking')
+    setCurrentExerciseIndex(0)
+    setCurrentSetIndex(0)
+    setCompletedSets({})
+    setSetReps('')
+    clearInterval(restInterval)
+    setRestTimer(0)
+    setRestInterval(null)
+  }
+
+  async function sendRestEndNotification() {
+    try {
+      await supabase.functions.invoke('send-push-notification', {
+        body: {
+          title: 'Rest complete',
+          body: 'Time for your next set!'
+        }
+      })
+    } catch {}
+  }
+
+  function startRestTimer(seconds, type) {
+    clearInterval(restInterval)
+    setRestType(type)
+    setRestTimer(seconds)
+    setWorkoutPhase('resting')
+    const interval = setInterval(() => {
+      setRestTimer(prev => {
+        if (prev <= 1) {
+          clearInterval(interval)
+          setWorkoutPhase('tracking')
+          setRestType(null)
+          if (navigator.vibrate) navigator.vibrate([300, 100, 300])
+          sendRestEndNotification()
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+    setRestInterval(interval)
+  }
+
+  function handleSetComplete() {
+    const ex = getCurrentExercise()
+    if (!ex) return
+
+    const reps = isSessionExercise(ex) ? 'done' : parseInt(setReps)
+    if (!isSessionExercise(ex) && (!reps || reps < 1)) return
+
+    // Save completed set
+    const current = completedSets[ex.id] || []
+    const updated = [...current, reps]
+    const newCompleted = { ...completedSets, [ex.id]: updated }
+    setCompletedSets(newCompleted)
+    setSetReps('')
+
+    const totalSets = parseInt(ex.sets) || 1
+    const setsLeft = totalSets - updated.length
+
+    if (setsLeft > 0) {
+      // More sets of same exercise — short rest
+      setCurrentSetIndex(prev => prev + 1)
+      setWorkoutPhase('choosing-rest-sets')
+    } else {
+      // Exercise complete — move to next
+      const nextIndex = currentExerciseIndex + 1
+      if (nextIndex < workoutExercises.length) {
+        setCurrentExerciseIndex(nextIndex)
+        setCurrentSetIndex(0)
+        setWorkoutPhase('choosing-rest-exercises')
+      } else {
+        // All exercises done — build the workout summary into quickLog.notes
+        // so it flows through finishTimer (which only reads quickLog.notes).
+        const notesSummary = workoutExercises.map(wex => {
+          const done = newCompleted[wex.id] || []
+          return `${wex.name}: ${done.join('·')}`
+        }).join(' | ')
+        setQuickLog(prev => ({ ...prev, notes: notesSummary }))
+        setWorkoutPhase('complete')
+      }
+    }
   }
 
   async function toggleGoal(goal) {
@@ -400,7 +512,7 @@ export default function Home() {
     const elapsedMs = elapsed[routine.id] || 0
 
     return (
-      <div onClick={() => { setModal(null); setShowExercisesDuringTimer(true) }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.75)', display: 'flex', alignItems: 'flex-end', zIndex: 200 }}>
+      <div onClick={() => { setModal(null); resetWorkoutState() }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.75)', display: 'flex', alignItems: 'flex-end', zIndex: 200 }}>
         <div onClick={e => e.stopPropagation()} style={{ background: 'var(--surf)', borderRadius: '14px 14px 0 0', padding: '20px 18px 40px', width: '100%', maxHeight: '85vh', overflowY: 'auto' }}>
 
           <div style={{ fontSize: '15px', fontWeight: 500, marginBottom: '3px' }}>{routine.title}</div>
@@ -413,111 +525,310 @@ export default function Home() {
             </div>
           )}
 
-          {/* TIMER RUNNING */}
-          {isActive && (
-            <>
-              {type === 'workout' && (
-                <div style={{ marginBottom: '14px' }}>
-                  <div
-                    onClick={() => setShowExercisesDuringTimer(prev => !prev)}
-                    style={{
-                      display: 'flex', alignItems: 'center',
-                      justifyContent: 'space-between',
-                      fontSize: '10px', color: 'var(--muted)',
-                      textTransform: 'uppercase', letterSpacing: '.6px',
-                      marginBottom: showExercisesDuringTimer ? '8px' : '0',
-                      cursor: 'pointer', padding: '4px 0'
-                    }}>
-                    <span>Today's routine</span>
-                    <span>{showExercisesDuringTimer ? '▲' : '▼'}</span>
-                  </div>
+          {/* TIMER RUNNING — WORKOUT: full set-by-set tracker */}
+          {isActive && type === 'workout' && (
+            <div style={{ maxHeight: '80vh', overflowY: 'auto' }}>
 
-                  {showExercisesDuringTimer && routineExercises.map(ex => (
-                    <div key={ex.id} style={{
-                      display: 'flex', justifyContent: 'space-between',
-                      alignItems: 'center', padding: '7px 0',
-                      borderBottom: '0.5px solid var(--border)'
-                    }}>
-                      <div style={{ fontSize: '13px', color: 'var(--text)' }}>
-                        {ex.name}
-                      </div>
-                      <div style={{ fontSize: '12px', color: 'var(--fit)', fontWeight: 500 }}>
-                        {ex.sets} × {ex.reps}
-                      </div>
-                    </div>
-                  ))}
+              {/* Timer header — always visible */}
+              <div style={{
+                display: 'flex', justifyContent: 'space-between',
+                alignItems: 'center', marginBottom: '16px',
+                paddingBottom: '12px', borderBottom: '0.5px solid var(--border)'
+              }}>
+                <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text)' }}>
+                  {routine.title}
                 </div>
-              )}
+                <div style={{ fontSize: '20px', fontWeight: 600, color: 'var(--fit)' }}>
+                  {formatElapsed(elapsedMs)}
+                </div>
+              </div>
 
-              {type === 'workout' && (
-                <div style={{
-                  background: 'var(--surf3)', borderRadius: '8px',
-                  padding: '12px', marginBottom: '14px',
-                  textAlign: 'center'
-                }}>
+              {/* PHASE: tracking — current set input */}
+              {workoutPhase === 'tracking' && getCurrentExercise() && (
+                <div>
+                  {/* Current exercise name */}
                   <div style={{
-                    fontSize: '10px', color: 'var(--muted)',
-                    textTransform: 'uppercase', letterSpacing: '.6px',
-                    marginBottom: '8px'
+                    fontSize: '18px', fontWeight: 600,
+                    color: 'var(--text)', marginBottom: '4px',
+                    fontFamily: 'Georgia, serif'
                   }}>
-                    Rest timer
+                    {getCurrentExercise().name}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--fit)', marginBottom: '20px' }}>
+                    Set {currentSetIndex + 1} / {getCurrentExercise().sets}
                   </div>
 
-                  {restTimer > 0 ? (
-                    <div>
-                      <div style={{
-                        fontSize: '32px', fontWeight: 600,
-                        color: restTimer <= 10 ? 'var(--danger)' : 'var(--fit)',
-                        marginBottom: '8px'
-                      }}>
-                        {Math.floor(restTimer / 60)}:{String(restTimer % 60).padStart(2, '0')}
+                  {/* Reps input or session button */}
+                  {isSessionExercise(getCurrentExercise()) ? (
+                    <button onClick={handleSetComplete} style={{
+                      width: '100%', background: 'var(--fit)', border: 'none',
+                      borderRadius: '10px', color: '#000', fontSize: '15px',
+                      padding: '16px', cursor: 'pointer', fontWeight: 600,
+                      marginBottom: '16px'
+                    }}>
+                      Mark as done
+                    </button>
+                  ) : (
+                    <div style={{ marginBottom: '16px' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '8px' }}>
+                        Reps completed
                       </div>
-                      <button
-                        onClick={() => { clearInterval(restInterval); setRestTimer(0) }}
+                      <input
+                        ref={repsInputRef}
+                        type="number"
+                        inputMode="numeric"
+                        value={setReps}
+                        onChange={e => setSetReps(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && handleSetComplete()}
+                        autoFocus
+                        placeholder="0"
                         style={{
-                          background: 'none', border: '0.5px solid var(--border)',
-                          borderRadius: '6px', color: 'var(--muted)',
-                          fontSize: '11px', padding: '4px 12px', cursor: 'pointer'
-                        }}>
-                        Skip rest
+                          width: '100%', background: 'var(--surf3)',
+                          border: '0.5px solid var(--fit)',
+                          borderRadius: '10px', color: 'var(--fit)',
+                          fontSize: '40px', fontWeight: 700,
+                          padding: '16px', outline: 'none',
+                          textAlign: 'center', marginBottom: '10px'
+                        }}
+                      />
+                      <button onClick={handleSetComplete} style={{
+                        width: '100%', background: 'var(--fit)', border: 'none',
+                        borderRadius: '10px', color: '#000', fontSize: '15px',
+                        padding: '14px', cursor: 'pointer', fontWeight: 600
+                      }}>
+                        Listo
                       </button>
                     </div>
-                  ) : (
-                    <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
-                      {[60, 90, 120, 180].map(secs => (
-                        <button key={secs}
-                          onClick={() => {
-                            setRestTimer(secs)
-                            const interval = setInterval(() => {
-                              setRestTimer(prev => {
-                                if (prev <= 1) { clearInterval(interval); return 0 }
-                                return prev - 1
-                              })
-                            }, 1000)
-                            setRestInterval(interval)
-                          }}
-                          style={{
-                            background: 'var(--surf)', border: '0.5px solid var(--border)',
-                            borderRadius: '6px', color: 'var(--muted)',
-                            fontSize: '11px', padding: '6px 10px', cursor: 'pointer'
-                          }}>
-                          {secs >= 60 ? `${secs/60}min` : `${secs}s`}
-                        </button>
-                      ))}
-                    </div>
                   )}
+
+                  {/* Exercise list below */}
+                  <div style={{ marginTop: '8px' }}>
+                    <div style={{
+                      fontSize: '9px', color: 'var(--muted)',
+                      textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '8px'
+                    }}>
+                      Workout
+                    </div>
+                    {workoutExercises.map((ex, i) => {
+                      const done = getCompletedRepsForExercise(ex.id)
+                      const total = parseInt(ex.sets) || 1
+                      const isCurrent = i === currentExerciseIndex
+                      const isComplete = done.length >= total
+                      return (
+                        <div key={ex.id} style={{
+                          display: 'flex', justifyContent: 'space-between',
+                          alignItems: 'center', padding: '6px 0',
+                          borderBottom: '0.5px solid var(--border)',
+                          opacity: isComplete ? 0.5 : isCurrent ? 1 : 0.6
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{
+                              width: '6px', height: '6px', borderRadius: '50%',
+                              background: isComplete ? 'var(--fit)' : isCurrent ? 'var(--fit)' : 'var(--border)',
+                              flexShrink: 0
+                            }} />
+                            <div style={{
+                              fontSize: '12px',
+                              color: isCurrent ? 'var(--text)' : 'var(--muted)',
+                              fontWeight: isCurrent ? 500 : 400,
+                              textDecoration: isComplete ? 'line-through' : 'none'
+                            }}>
+                              {ex.name}
+                            </div>
+                          </div>
+                          <div style={{ fontSize: '11px', color: 'var(--muted2)' }}>
+                            {isComplete
+                              ? done.join(' · ') + ' reps'
+                              : `${ex.sets} × ${ex.reps}`
+                            }
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
               )}
 
+              {/* PHASE: choosing rest between sets */}
+              {workoutPhase === 'choosing-rest-sets' && (
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '16px', fontWeight: 500, marginBottom: '6px' }}>
+                    Set complete
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '20px' }}>
+                    {getCurrentExercise()?.name} — Set {currentSetIndex} done
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '10px' }}>
+                    Rest between sets
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                    {[[60, '1 min'], [90, '1:30'], [120, '2 min']].map(([secs, label]) => (
+                      <button key={secs} onClick={() => startRestTimer(secs, 'sets')}
+                        style={{
+                          flex: 1, background: 'var(--surf3)',
+                          border: '0.5px solid var(--border)',
+                          borderRadius: '8px', color: 'var(--text)',
+                          fontSize: '13px', padding: '12px 8px',
+                          cursor: 'pointer', fontWeight: 500
+                        }}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <button onClick={() => setWorkoutPhase('tracking')}
+                    style={{
+                      marginTop: '10px', background: 'none', border: 'none',
+                      color: 'var(--muted)', fontSize: '12px', cursor: 'pointer'
+                    }}>
+                    Skip rest
+                  </button>
+                </div>
+              )}
+
+              {/* PHASE: choosing rest between exercises */}
+              {workoutPhase === 'choosing-rest-exercises' && (
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '16px', fontWeight: 500, marginBottom: '6px' }}>
+                    Exercise complete
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '20px' }}>
+                    Next: {workoutExercises[currentExerciseIndex]?.name}
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '10px' }}>
+                    Rest before next exercise
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                    {[[120, '2 min'], [150, '2:30'], [180, '3 min']].map(([secs, label]) => (
+                      <button key={secs} onClick={() => startRestTimer(secs, 'exercises')}
+                        style={{
+                          flex: 1, background: 'var(--surf3)',
+                          border: '0.5px solid var(--border)',
+                          borderRadius: '8px', color: 'var(--text)',
+                          fontSize: '13px', padding: '12px 8px',
+                          cursor: 'pointer', fontWeight: 500
+                        }}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <button onClick={() => setWorkoutPhase('tracking')}
+                    style={{
+                      marginTop: '10px', background: 'none', border: 'none',
+                      color: 'var(--muted)', fontSize: '12px', cursor: 'pointer'
+                    }}>
+                    Skip rest
+                  </button>
+                </div>
+              )}
+
+              {/* PHASE: resting — countdown */}
+              {workoutPhase === 'resting' && (
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '8px' }}>
+                    {restType === 'sets' ? 'Rest between sets' : 'Rest before next exercise'}
+                  </div>
+                  <div style={{
+                    fontSize: '56px', fontWeight: 700,
+                    color: restTimer <= 10 ? 'var(--danger)' : 'var(--fit)',
+                    marginBottom: '8px', fontVariantNumeric: 'tabular-nums'
+                  }}>
+                    {Math.floor(restTimer / 60)}:{String(restTimer % 60).padStart(2, '0')}
+                  </div>
+                  {restType === 'exercises' && workoutExercises[currentExerciseIndex] && (
+                    <div style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '16px' }}>
+                      Next: {workoutExercises[currentExerciseIndex].name}
+                    </div>
+                  )}
+                  <button onClick={() => {
+                    clearInterval(restInterval)
+                    setRestTimer(0)
+                    setWorkoutPhase('tracking')
+                  }} style={{
+                    background: 'none', border: '0.5px solid var(--border)',
+                    borderRadius: '8px', color: 'var(--muted)',
+                    fontSize: '12px', padding: '8px 20px', cursor: 'pointer'
+                  }}>
+                    Skip rest
+                  </button>
+                </div>
+              )}
+
+              {/* PHASE: complete — all exercises done */}
+              {workoutPhase === 'complete' && (
+                <div>
+                  <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                    <div style={{
+                      fontSize: '16px', fontWeight: 600,
+                      color: 'var(--fit)', marginBottom: '4px'
+                    }}>
+                      All exercises complete
+                    </div>
+                    <div style={{ fontSize: '12px', color: 'var(--muted)' }}>
+                      {formatElapsed(elapsedMs)} total
+                    </div>
+                  </div>
+
+                  {/* Summary */}
+                  {workoutExercises.map(ex => {
+                    const done = getCompletedRepsForExercise(ex.id)
+                    return (
+                      <div key={ex.id} style={{
+                        display: 'flex', justifyContent: 'space-between',
+                        padding: '7px 0', borderBottom: '0.5px solid var(--border)'
+                      }}>
+                        <div style={{ fontSize: '12px', color: 'var(--muted)' }}>{ex.name}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--fit)', fontWeight: 500 }}>
+                          {done.map(r => r === 'done' ? '✓' : r).join(' · ')}
+                        </div>
+                      </div>
+                    )
+                  })}
+
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+                    <button onClick={() => finishTimer(routine)} style={{
+                      flex: 1, background: 'var(--fit)', border: 'none',
+                      borderRadius: '10px', color: '#000', fontSize: '14px',
+                      padding: '14px', cursor: 'pointer', fontWeight: 600
+                    }}>
+                      Finish workout
+                    </button>
+                    <button onClick={() => setWorkoutPhase('tracking')} style={{
+                      background: 'var(--surf3)', border: '0.5px solid var(--border)',
+                      borderRadius: '10px', color: 'var(--muted)',
+                      fontSize: '13px', padding: '14px 16px', cursor: 'pointer'
+                    }}>
+                      Continue
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Cancel timer — always at bottom */}
+              {workoutPhase !== 'complete' && (
+                <button onClick={() => {
+                  setActiveTimers(prev => { const n = { ...prev }; delete n[routine.id]; return n })
+                  setModal(null)
+                  resetWorkoutState()
+                }} style={{
+                  width: '100%', background: 'none',
+                  border: '0.5px solid var(--border)',
+                  borderRadius: '8px', color: 'var(--danger)',
+                  fontSize: '13px', padding: '10px',
+                  cursor: 'pointer', marginTop: '16px'
+                }}>
+                  Cancel workout
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* TIMER RUNNING — reading / learning */}
+          {isActive && type !== 'workout' && (
+            <>
               <div style={{ textAlign: 'center', marginBottom: '20px', padding: '16px', background: 'var(--surf3)', borderRadius: '10px' }}>
                 <div style={{ fontSize: '40px', fontWeight: 500, color: 'var(--fit)' }}>{formatElapsed(elapsedMs)}</div>
                 <div style={{ fontSize: '12px', color: 'var(--muted2)', marginTop: '4px' }}>Timer running</div>
               </div>
-              {type === 'workout' && (
-                <input placeholder="Notes (optional)" value={quickLog.notes || ''}
-                  onChange={e => setQuickLog(p => ({ ...p, notes: e.target.value }))}
-                  style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '13px', padding: '9px 11px', outline: 'none', marginBottom: '10px' }} />
-              )}
               {type === 'reading' && (
                 <>
                   <select value={quickLog.book_id || ''} onChange={e => setQuickLog(p => ({ ...p, book_id: e.target.value }))}
@@ -548,10 +859,7 @@ export default function Home() {
               <button onClick={() => {
                 setActiveTimers(prev => { const n = { ...prev }; delete n[routine.id]; return n })
                 setModal(null)
-                setShowExercisesDuringTimer(true)
-                clearInterval(restInterval)
-                setRestTimer(0)
-                setRestInterval(null)
+                resetWorkoutState()
               }}
                 style={{ width: '100%', background: 'none', border: '0.5px solid var(--border)', borderRadius: '8px', color: 'var(--danger)', fontSize: '13px', padding: '10px', cursor: 'pointer' }}>
                 Cancel timer
