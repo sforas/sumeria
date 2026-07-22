@@ -58,6 +58,7 @@ export default function Home() {
   const [medLog, setMedLog] = useState({})
   const [reminders, setReminders] = useState([])
   const [contactReminders, setContactReminders] = useState([])
+  const [todayCalendarEvents, setTodayCalendarEvents] = useState([])
   const [activeTimers, setActiveTimers] = useState({})
   const [elapsed, setElapsed] = useState({})
   const [books, setBooks] = useState([])
@@ -126,7 +127,8 @@ export default function Home() {
       { data: booksData },
       { data: coursesData },
       { data: journalData },
-      { data: mantraData }
+      { data: mantraData },
+      { data: calendarEventsData }
     ] = await Promise.all([
       supabase.from('goals').select('*').eq('date', today()).order('created_at'),
       supabase.from('routines').select('*').eq('active', true),
@@ -139,7 +141,8 @@ export default function Home() {
       supabase.from('books').select('*').eq('status', 'reading'),
       supabase.from('courses').select('*').eq('status', 'active'),
       supabase.from('daily_journal').select('*').eq('date', today()).single(),
-      supabase.from('settings').select('*').eq('key', 'mantra').single()
+      supabase.from('settings').select('*').eq('key', 'mantra').single(),
+      supabase.from('calendar_events').select('*').eq('date', today()).order('time', { ascending: true, nullsFirst: false })
     ])
 
     const currentHour = new Date().getHours()
@@ -173,6 +176,7 @@ export default function Home() {
 
     setReminders(remindersData || [])
     setContactReminders(contactRemindersData || [])
+    setTodayCalendarEvents(calendarEventsData || [])
     setBooks(booksData || [])
     setCourses(coursesData || [])
 
@@ -1232,7 +1236,7 @@ export default function Home() {
         </>
       )}
 
-      {(routineItems.length > 0 || medicines.length > 0 || contactReminders.length > 0) && (
+      {(routineItems.length > 0 || medicines.length > 0 || contactReminders.length > 0 || todayCalendarEvents.length > 0) && (
         <>
           <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '8px' }}>Today's schedule</div>
           {routineItems.map(routine => {
@@ -1294,6 +1298,32 @@ export default function Home() {
                 <div style={{ fontSize: '11px', color: 'var(--muted2)' }}>{reminder.contacts?.name}</div>
               </div>
               <button onClick={() => completeContactReminder(reminder.id)} style={{ background: 'var(--social)', border: 'none', borderRadius: '6px', color: '#fff', fontSize: '11px', padding: '5px 10px', cursor: 'pointer', fontWeight: 500, flexShrink: 0 }}>Done</button>
+            </div>
+          ))}
+          {todayCalendarEvents.length > 0 && todayCalendarEvents.map(ev => (
+            <div key={ev.id} style={{
+              display: 'flex', alignItems: 'center', gap: '10px',
+              padding: '10px 12px', background: 'var(--surf)',
+              border: '0.5px solid var(--border)',
+              borderLeft: `2px solid ${AREA_COLORS[ev.area] || 'var(--sand)'}`,
+              borderRadius: '0 8px 8px 0', marginBottom: '6px'
+            }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text)' }}>
+                  {ev.title}
+                </div>
+                <div style={{ fontSize: '11px', color: 'var(--muted2)', marginTop: '1px' }}>
+                  {ev.time ? ev.time.slice(0, 5) + ' · ' : ''}
+                  {ev.area ? ev.area.charAt(0).toUpperCase() + ev.area.slice(1) : 'Event'}
+                  {ev.notes ? ' · ' + ev.notes : ''}
+                </div>
+              </div>
+              <div style={{
+                fontSize: '9px', color: AREA_COLORS[ev.area] || 'var(--sand)',
+                textTransform: 'uppercase', letterSpacing: '.3px'
+              }}>
+                {ev.area}
+              </div>
             </div>
           ))}
         </>
