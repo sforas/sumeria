@@ -26,7 +26,14 @@ export default function App() {
   const [showYearlyReview, setShowYearlyReview] = useState(false)
 
   useEffect(() => {
-    Notifs.init()
+    async function initNotifs() {
+      await Notifs.init()
+      if (!localStorage.getItem('sumeria_push_registered')) {
+        await Notifs.enable()
+        localStorage.setItem('sumeria_push_registered', 'true')
+      }
+    }
+    initNotifs()
   }, [])
 
   useEffect(() => {
