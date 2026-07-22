@@ -124,7 +124,7 @@ export default function Calendar() {
   function getDotsForDate(dateStr) {
     const dots = []
     // Events on this date
-    events.filter(e => e.date === dateStr).forEach(e => {
+    events.filter(e => e.date === dateStr && !e.done).forEach(e => {
       dots.push({ color: DISTRICT_COLORS[e.area] || DISTRICT_COLORS.general, id: e.id })
     })
     // Routines scheduled on this day of week
@@ -144,7 +144,7 @@ export default function Calendar() {
       const days = r.days_of_week.split(',').map(Number)
       return days.includes(dayOfWeek)
     })
-    const dayEvents = events.filter(e => e.date === dateStr)
+    const dayEvents = events.filter(e => e.date === dateStr && !e.done)
     return { routines: dayRoutines, events: dayEvents }
   }
 

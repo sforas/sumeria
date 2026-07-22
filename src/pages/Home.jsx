@@ -142,7 +142,7 @@ export default function Home() {
       supabase.from('courses').select('*').eq('status', 'active'),
       supabase.from('daily_journal').select('*').eq('date', today()).single(),
       supabase.from('settings').select('*').eq('key', 'mantra').single(),
-      supabase.from('calendar_events').select('*').eq('date', today()).order('time', { ascending: true, nullsFirst: false })
+      supabase.from('calendar_events').select('*').eq('date', today()).eq('done', false).order('time', { ascending: true, nullsFirst: false })
     ])
 
     const currentHour = new Date().getHours()
@@ -494,6 +494,11 @@ export default function Home() {
   async function completeContactReminder(id) {
     await supabase.from('contact_reminders').update({ done: true }).eq('id', id)
     setContactReminders(prev => prev.filter(r => r.id !== id))
+  }
+
+  async function dismissCalendarEvent(id) {
+    await supabase.from('calendar_events').update({ done: true }).eq('id', id)
+    setTodayCalendarEvents(prev => prev.filter(e => e.id !== id))
   }
 
   async function enableNotifs() {
@@ -1324,6 +1329,16 @@ export default function Home() {
               }}>
                 {ev.area}
               </div>
+              <button onClick={() => dismissCalendarEvent(ev.id)}
+                style={{
+                  background: AREA_COLORS[ev.area] || 'var(--sand)',
+                  border: 'none', borderRadius: '6px',
+                  color: '#000', fontSize: '11px',
+                  padding: '5px 10px', cursor: 'pointer', fontWeight: 500,
+                  flexShrink: 0
+                }}>
+                Done
+              </button>
             </div>
           ))}
         </>
