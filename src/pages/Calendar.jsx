@@ -157,8 +157,15 @@ export default function Calendar() {
 
   async function addEvent() {
     if (!newEvent.title.trim() || !newEvent.date) return
+    const payload = {
+      title: newEvent.title.trim(),
+      date: newEvent.date,
+      time: newEvent.time || null,
+      area: newEvent.area || 'other',
+      notes: newEvent.notes || null
+    }
     const { data } = await supabase.from('calendar_events')
-      .insert(newEvent).select().single()
+      .insert(payload).select().single()
     if (data) setEvents(prev => [...prev, data])
     setNewEvent({ title: '', date: selectedDay || '', time: '', area: 'fitness', notes: '' })
     setShowAddEvent(false)
@@ -166,11 +173,15 @@ export default function Calendar() {
 
   async function saveEvent() {
     if (!editEvent) return
-    await supabase.from('calendar_events').update({
-      title: editEvent.title, date: editEvent.date,
-      time: editEvent.time, area: editEvent.area, notes: editEvent.notes
-    }).eq('id', editEvent.id)
-    setEvents(prev => prev.map(e => e.id === editEvent.id ? { ...e, ...editEvent } : e))
+    const payload = {
+      title: editEvent.title,
+      date: editEvent.date,
+      time: editEvent.time || null,
+      area: editEvent.area || 'other',
+      notes: editEvent.notes || null
+    }
+    await supabase.from('calendar_events').update(payload).eq('id', editEvent.id)
+    setEvents(prev => prev.map(e => e.id === editEvent.id ? { ...e, ...payload } : e))
     setEditEvent(null)
   }
 
