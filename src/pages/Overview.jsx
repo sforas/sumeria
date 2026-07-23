@@ -47,18 +47,18 @@ export default function Overview() {
 
     const [
       { data: workouts },
-      { data: goals },
+      { data: applications },
       { data: meals },
-      { data: _books },
+      { data: books },
       { data: sessions },
       { data: completedReminders },
       { data: activeContacts },
       { data: sleep },
       { data: medLog },
-      { data: transactions }
+      { data: allSavings }
     ] = await Promise.all([
       supabase.from('workouts').select('date').gte('date', from),
-      supabase.from('goals').select('done, area').gte('date', from),
+      supabase.from('applications').select('date').gte('date', from),
       supabase.from('meals').select('date').gte('date', from),
       supabase.from('books').select('pages_read, status'),
       supabase.from('study_sessions').select('minutes').gte('date', from),
@@ -66,7 +66,7 @@ export default function Overview() {
       supabase.from('contacts').select('id').not('contact_frequency', 'is', null).neq('contact_frequency', 'none'),
       supabase.from('sleep_log').select('sleep_time, wake_time').gte('date', from),
       supabase.from('med_log').select('taken').gte('date', from),
-      supabase.from('transactions').select('amount, type').gte('date', from)
+      supabase.from('transactions').select('amount').eq('type', 'saving')
     ])
 
     const days = period === 'week' ? 7 : period === 'month' ? 30 : 365
@@ -76,19 +76,22 @@ export default function Overview() {
     const workoutTarget = period === 'week' ? 5 : period === 'month' ? 20 : 240
     const fitnessScore = Math.min(Math.round(workoutCount / workoutTarget * 100), 100)
 
-    // Work score — based on work goals completed
-    const workGoals = goals?.filter(g => g.area === 'work') || []
-    const workDone = workGoals.filter(g => g.done).length
-    const workScore = workGoals.length > 0 ? Math.min(Math.round(workDone / workGoals.length * 100), 100) : 0
+    // Work score — job applications submitted in the period
+    const appCount = applications?.length || 0
+    const appTarget = period === 'week' ? 5 : period === 'month' ? 20 : 240
+    const workScore = Math.min(Math.round(appCount / appTarget * 100), 100)
 
     // Diet score
     const dietDays = [...new Set(meals?.map(m => m.date) || [])].length
     const dietScore = Math.min(Math.round(dietDays / days * 100), 100)
 
-    // Reading score
-    const readGoals = goals?.filter(g => g.area === 'reading') || []
-    const readDone = readGoals.filter(g => g.done).length
-    const readScore = readGoals.length > 0 ? Math.min(Math.round(readDone / readGoals.length * 100), 100) : 0
+    // Reading score — books finished. Note: pages_read/status have no timestamp
+    // of when they changed (books has no updated_at column), so "finished" is
+    // necessarily an all-time count, scored against a period-scaled target like
+    // the other scores rather than true period-scoped progress.
+    const booksFinished = books?.filter(b => b.status === 'finished').length || 0
+    const readTarget = period === 'week' ? 1 : period === 'month' ? 2 : 12
+    const readScore = Math.min(Math.round(booksFinished / readTarget * 100), 100)
 
     // Learning score
     const studyMins = sessions?.reduce((sum, s) => sum + (s.minutes || 0), 0) || 0
@@ -121,11 +124,11 @@ export default function Overview() {
       ? Math.round(healthComponents.reduce((a, b) => a + b, 0) / healthComponents.length)
       : 0
 
-    // Savings score — saved amount vs. the emergency fund goal, prorated to the period
+    // Savings score — all-time total saved vs. the fixed emergency fund goal.
+    // Always the same regardless of period, not prorated — it's a running total, not a period metric.
     const emergencyGoal = 100000
-    const savedInPeriod = transactions?.filter(t => t.type === 'saving').reduce((sum, t) => sum + (t.amount || 0), 0) || 0
-    const savingsTarget = emergencyGoal * (days / 365)
-    const savingsScore = Math.min(Math.round(savedInPeriod / savingsTarget * 100), 100)
+    const totalSaved = allSavings?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0
+    const savingsScore = Math.min(Math.round(totalSaved / emergencyGoal * 100), 100)
 
     const data = [
       { area: 'Fitness', score: fitnessScore, color: 'var(--fit)' },

@@ -6,9 +6,15 @@ import SleepIcon from '../components/icons/SleepIcon'
 import ZigguratPicker from '../components/ZigguratPicker'
 
 function lastMonth() {
-  const d = new Date()
-  d.setMonth(d.getMonth() - 1)
-  return d.toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' }).slice(0, 7)
+  const t = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
+  const [y, m] = t.split('-').map(Number)
+  const prev = new Date(Date.UTC(y, m - 2, 1))
+  return `${prev.getUTCFullYear()}-${String(prev.getUTCMonth() + 1).padStart(2, '0')}`
+}
+
+function lastDayOfMonth(ym) {
+  const [y, m] = ym.split('-').map(Number)
+  return new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10)
 }
 
 function monthName(ym) {
@@ -29,7 +35,7 @@ export default function MonthlyReview({ onClose }) {
 
   async function fetchStats() {
     const from = month + '-01'
-    const to = month + '-31'
+    const to = lastDayOfMonth(month)
 
     const [
       { data: workouts },
@@ -38,11 +44,13 @@ export default function MonthlyReview({ onClose }) {
       { data: books },
       { data: sessions },
       { data: applications },
-      { data: interactions },
+      { data: contactRemindersDone },
       { data: sleep },
       { data: journal },
       { data: transactions },
       { data: goals },
+      { data: medLogPeriod },
+      { data: calendarEventsDone },
       { data: existing }
     ] = await Promise.all([
       supabase.from('workouts').select('*').gte('date', from).lte('date', to),
@@ -51,11 +59,13 @@ export default function MonthlyReview({ onClose }) {
       supabase.from('books').select('*'),
       supabase.from('study_sessions').select('*').gte('date', from).lte('date', to),
       supabase.from('applications').select('*').gte('date', from).lte('date', to),
-      supabase.from('interactions').select('*').gte('date', from).lte('date', to),
+      supabase.from('contact_reminders').select('*, contacts(name)').eq('done', true).gte('remind_on', from).lte('remind_on', to),
       supabase.from('sleep_log').select('*').gte('date', from).lte('date', to),
       supabase.from('daily_journal').select('*').gte('date', from).lte('date', to),
       supabase.from('transactions').select('*').gte('date', from).lte('date', to),
       supabase.from('goals').select('*').gte('date', from).lte('date', to),
+      supabase.from('med_log').select('*').gte('date', from).lte('date', to),
+      supabase.from('calendar_events').select('*').gte('date', from).lte('date', to).eq('done', true),
       supabase.from('monthly_reviews').select('*').eq('month', month).single()
     ])
 
@@ -85,8 +95,15 @@ export default function MonthlyReview({ onClose }) {
     const offers = applications?.filter(a => a.status === 'offer').length || 0
 
     // Social
-    const socialCount = interactions?.length || 0
-    const uniquePeople = [...new Set(interactions?.map(i => i.person) || [])].length
+    const socialCount = contactRemindersDone?.length || 0
+    const uniquePeople = [...new Set(contactRemindersDone?.map(r => r.contact_id) || [])].length
+
+    // Medicines
+    const medsTaken = medLogPeriod?.filter(m => m.taken).length || 0
+    const medsTotal = medLogPeriod?.length || 0
+
+    // Calendar events
+    const eventsCompleted = calendarEventsDone?.length || 0
 
     // Sleep
     const sleepEntries = sleep || []
@@ -143,7 +160,7 @@ export default function MonthlyReview({ onClose }) {
       socialCount, uniquePeople, avgSleepMins, goodSleepNights,
       sleepNights: sleepEntries.length, avgMood, avgEnergy,
       wins, monthSaved, monthExpenses, totalGoals, doneGoals,
-      goalPct, radarData
+      goalPct, radarData, medsTaken, medsTotal, eventsCompleted
     })
 
     if (existing) {
@@ -270,7 +287,7 @@ export default function MonthlyReview({ onClose }) {
           <div style={{ background: 'var(--surf)', border: '0.5px solid #C8A83A22', borderRadius: '14px', padding: '14px' }}>
             <div style={{ color: 'var(--read)', display: 'flex', marginBottom: '8px' }}><ReadingSymbol size={18} /></div>
             <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--read)' }}>{stats.booksFinished}</div>
-            <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>Books finished</div>
+            <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>Total books finished</div>
             {stats.currentBooks.length > 0 && (
               <div style={{ fontSize: '11px', color: 'var(--muted2)', marginTop: '6px' }}>{stats.currentBooks.length} in progress</div>
             )}
@@ -292,7 +309,7 @@ export default function MonthlyReview({ onClose }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
             <div>
               <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--social)' }}>{stats.socialCount}</div>
-              <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>Interactions</div>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>Contacts reached</div>
             </div>
             <div>
               <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--social)' }}>{stats.uniquePeople}</div>
@@ -335,6 +352,18 @@ export default function MonthlyReview({ onClose }) {
               )}
             </div>
           )}
+        </div>
+
+        {/* Medicines + Events */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+          <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '14px', padding: '14px', textAlign: 'center' }}>
+            <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--health)' }}>{stats.medsTotal > 0 ? `${stats.medsTaken}/${stats.medsTotal}` : '—'}</div>
+            <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>Medicines taken</div>
+          </div>
+          <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '14px', padding: '14px', textAlign: 'center' }}>
+            <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--acc)' }}>{stats.eventsCompleted}</div>
+            <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>Events completed</div>
+          </div>
         </div>
 
         {/* Savings */}

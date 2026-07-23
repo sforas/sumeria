@@ -4,20 +4,30 @@ import { FitnessSymbol, WorkSymbol, ReadingSymbol, LearningSymbol, SocialSymbol,
 import SleepIcon from '../components/icons/SleepIcon'
 import ZigguratPicker from '../components/ZigguratPicker'
 
+function todayInMX() {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
+}
+
+function shiftDateString(dateStr, days) {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const dt = new Date(Date.UTC(y, m - 1, d))
+  dt.setUTCDate(dt.getUTCDate() + days)
+  return dt.toISOString().slice(0, 10)
+}
+
+function dayOfWeekMX() {
+  const [y, m, d] = todayInMX().split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1, d)).getUTCDay()
+}
+
 function lastWeekStart() {
-  const d = new Date()
-  const day = d.getDay()
-  const diff = d.getDate() - day + (day === 0 ? -13 : -6)
-  const monday = new Date(d.setDate(diff))
-  return monday.toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
+  const day = dayOfWeekMX()
+  return shiftDateString(todayInMX(), day === 0 ? -13 : -(day + 6))
 }
 
 function lastWeekEnd() {
-  const d = new Date()
-  const day = d.getDay()
-  const diff = d.getDate() - day + (day === 0 ? -7 : 0)
-  const sunday = new Date(d.setDate(diff))
-  return sunday.toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
+  const day = dayOfWeekMX()
+  return shiftDateString(todayInMX(), day === 0 ? -7 : -day)
 }
 
 export default function WeeklyReview({ onClose }) {
@@ -40,10 +50,12 @@ export default function WeeklyReview({ onClose }) {
       { data: books },
       { data: sessions },
       { data: applications },
-      { data: interactions },
+      { data: contactRemindersDone },
       { data: sleep },
       { data: journal },
       { data: transactions },
+      { data: medLogPeriod },
+      { data: calendarEventsDone },
       { data: existing }
     ] = await Promise.all([
       supabase.from('workouts').select('*').gte('date', ws).lte('date', we),
@@ -52,10 +64,12 @@ export default function WeeklyReview({ onClose }) {
       supabase.from('books').select('*'),
       supabase.from('study_sessions').select('*').gte('date', ws).lte('date', we),
       supabase.from('applications').select('*').gte('date', ws).lte('date', we),
-      supabase.from('interactions').select('*').gte('date', ws).lte('date', we),
+      supabase.from('contact_reminders').select('*, contacts(name)').eq('done', true).gte('remind_on', ws).lte('remind_on', we),
       supabase.from('sleep_log').select('*').gte('date', ws).lte('date', we),
       supabase.from('daily_journal').select('*').gte('date', ws).lte('date', we),
       supabase.from('transactions').select('*').gte('date', ws).lte('date', we),
+      supabase.from('med_log').select('*').gte('date', ws).lte('date', we),
+      supabase.from('calendar_events').select('*').gte('date', ws).lte('date', we).eq('done', true),
       supabase.from('weekly_reviews').select('*').eq('week_start', ws).single()
     ])
 
@@ -78,7 +92,15 @@ export default function WeeklyReview({ onClose }) {
     const interviews = applications?.filter(a => a.status === 'interview').length || 0
 
     // Social
-    const socialCount = interactions?.length || 0
+    const socialCount = contactRemindersDone?.length || 0
+    const contactedNames = [...new Set(contactRemindersDone?.map(r => r.contacts?.name).filter(Boolean) || [])]
+
+    // Medicines
+    const medsTaken = medLogPeriod?.filter(m => m.taken).length || 0
+    const medsTotal = medLogPeriod?.length || 0
+
+    // Calendar events
+    const eventsCompleted = calendarEventsDone?.length || 0
 
     // Sleep
     const avgSleepMins = sleep?.length > 0
@@ -104,8 +126,9 @@ export default function WeeklyReview({ onClose }) {
     setStats({
       ws, we, workoutCount, workoutTypes, latestWeight,
       maxPushups, maxPullups, totalPagesRead, booksFinished,
-      studyMins, appCount, interviews, socialCount,
-      avgSleepMins, avgMood, bestWin, weekSaved
+      studyMins, appCount, interviews, socialCount, contactedNames,
+      avgSleepMins, avgMood, bestWin, weekSaved,
+      medsTaken, medsTotal, eventsCompleted
     })
 
     if (existing) {
@@ -159,7 +182,7 @@ export default function WeeklyReview({ onClose }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
             {[
               { Icon: FitnessSymbol, color: 'var(--fit)', value: stats.workoutCount, label: 'Workouts' },
-              { Icon: ReadingSymbol, color: 'var(--read)', value: stats.totalPagesRead, label: 'Pages read' },
+              { Icon: ReadingSymbol, color: 'var(--read)', value: stats.totalPagesRead, label: 'Total pages read' },
               { Icon: LearningSymbol, color: 'var(--learn)', value: `${Math.floor(stats.studyMins / 60)}h`, label: 'Study time' },
             ].map((h, i) => (
               <div key={i} style={{ textAlign: 'center', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', padding: '12px 8px' }}>
@@ -179,7 +202,7 @@ export default function WeeklyReview({ onClose }) {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '8px' }}>
             {[
-              { label: 'Sessions', value: stats.workoutCount },
+              { label: 'Workouts completed', value: stats.workoutCount },
               { label: 'Weight', value: stats.latestWeight ? `${stats.latestWeight} kg` : '—' },
               { label: 'Max push-ups', value: stats.maxPushups ? `${stats.maxPushups} reps` : '—' },
               { label: 'Max pull-ups', value: stats.maxPullups ? `${stats.maxPullups} reps` : '—' },
@@ -222,7 +245,7 @@ export default function WeeklyReview({ onClose }) {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
           <div style={{ background: 'var(--surf)', border: '0.5px solid var(--read)22', borderRadius: '12px', padding: '14px' }}>
             <div style={{ color: 'var(--read)', display: 'flex', marginBottom: '6px' }}><ReadingSymbol size={18} /></div>
-            <div style={{ fontSize: '10px', color: 'var(--muted)', marginBottom: '4px' }}>Pages read</div>
+            <div style={{ fontSize: '10px', color: 'var(--muted)', marginBottom: '4px' }}>Total pages read</div>
             <div style={{ fontSize: '22px', fontWeight: 600, color: 'var(--read)' }}>{stats.totalPagesRead}</div>
             {stats.booksFinished > 0 && <div style={{ fontSize: '11px', color: 'var(--muted2)', marginTop: '3px' }}>{stats.booksFinished} book{stats.booksFinished > 1 ? 's' : ''} finished</div>}
           </div>
@@ -236,7 +259,7 @@ export default function WeeklyReview({ onClose }) {
         {/* Social + Sleep + Savings */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px', marginBottom: '10px' }}>
           {[
-            { Icon: SocialSymbol, label: 'Interactions', value: stats.socialCount, color: 'var(--social)' },
+            { Icon: SocialSymbol, label: 'Contacts reached', value: stats.socialCount, color: 'var(--social)' },
             { Icon: SleepIcon, label: 'Avg sleep', value: stats.avgSleepMins > 0 ? `${Math.floor(stats.avgSleepMins/60)}h${Math.round(stats.avgSleepMins%60)}m` : '—', color: 'var(--acc)' },
             { Icon: SavingsSymbol, label: 'Saved', value: stats.weekSaved > 0 ? `$${Math.round(stats.weekSaved/1000)}k` : '—', color: 'var(--savings)' },
           ].map((s, i) => (
@@ -246,6 +269,24 @@ export default function WeeklyReview({ onClose }) {
               <div style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '2px' }}>{s.label}</div>
             </div>
           ))}
+        </div>
+
+        {stats.contactedNames.length > 0 && (
+          <div style={{ fontSize: '11px', color: 'var(--muted2)', marginBottom: '10px' }}>
+            Contacted: {stats.contactedNames.join(', ')}
+          </div>
+        )}
+
+        {/* Medicines + Events */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+          <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '12px', padding: '14px', textAlign: 'center' }}>
+            <div style={{ fontSize: '22px', fontWeight: 600, color: 'var(--health)' }}>{stats.medsTotal > 0 ? `${stats.medsTaken}/${stats.medsTotal}` : '—'}</div>
+            <div style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '2px' }}>Medicines taken</div>
+          </div>
+          <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '12px', padding: '14px', textAlign: 'center' }}>
+            <div style={{ fontSize: '22px', fontWeight: 600, color: 'var(--acc)' }}>{stats.eventsCompleted}</div>
+            <div style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '2px' }}>Events completed</div>
+          </div>
         </div>
 
         {/* Mood */}

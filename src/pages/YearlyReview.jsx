@@ -35,12 +35,14 @@ export default function YearlyReview({ onClose }) {
       { data: books },
       { data: sessions },
       { data: applications },
-      { data: interactions },
+      { data: contactRemindersDone },
       { data: sleep },
       { data: journal },
       { data: transactions },
       { data: goals },
       { data: routineLog },
+      { data: medLogPeriod },
+      { data: calendarEventsDone },
       { data: existing }
     ] = await Promise.all([
       supabase.from('workouts').select('*').gte('date', from).lte('date', to),
@@ -49,12 +51,14 @@ export default function YearlyReview({ onClose }) {
       supabase.from('books').select('*'),
       supabase.from('study_sessions').select('*').gte('date', from).lte('date', to),
       supabase.from('applications').select('*').gte('date', from).lte('date', to),
-      supabase.from('interactions').select('*').gte('date', from).lte('date', to),
+      supabase.from('contact_reminders').select('*, contacts(name)').eq('done', true).gte('remind_on', from).lte('remind_on', to),
       supabase.from('sleep_log').select('*').gte('date', from).lte('date', to),
       supabase.from('daily_journal').select('*').gte('date', from).lte('date', to).order('date'),
       supabase.from('transactions').select('*').gte('date', from).lte('date', to),
       supabase.from('goals').select('*').gte('date', from).lte('date', to),
       supabase.from('routine_log').select('*').gte('date', from).lte('date', to),
+      supabase.from('med_log').select('*').gte('date', from).lte('date', to),
+      supabase.from('calendar_events').select('*').gte('date', from).lte('date', to).eq('done', true),
       supabase.from('yearly_reviews').select('*').eq('year', year).single()
     ])
 
@@ -82,8 +86,15 @@ export default function YearlyReview({ onClose }) {
     const offers = applications?.filter(a => a.status === 'offer').length || 0
 
     // Social
-    const socialCount = interactions?.length || 0
-    const uniquePeople = [...new Set(interactions?.map(i => i.person) || [])].length
+    const socialCount = contactRemindersDone?.length || 0
+    const uniquePeople = [...new Set(contactRemindersDone?.map(r => r.contact_id) || [])].length
+
+    // Medicines
+    const medsTaken = medLogPeriod?.filter(m => m.taken).length || 0
+    const medsTotal = medLogPeriod?.length || 0
+
+    // Calendar events
+    const eventsCompleted = calendarEventsDone?.length || 0
 
     // Sleep
     const sleepEntries = sleep || []
@@ -119,22 +130,25 @@ export default function YearlyReview({ onClose }) {
     // Biggest stat
     const bigStats = [
       { label: 'workouts', value: workoutCount, Icon: FitnessSymbol, color: 'var(--fit)' },
-      { label: 'pages read', value: totalPages, Icon: ReadingSymbol, color: 'var(--read)' },
+      { label: 'total pages read', value: totalPages, Icon: ReadingSymbol, color: 'var(--read)' },
       { label: 'study hours', value: Math.floor(studyMins / 60), Icon: LearningSymbol, color: 'var(--learn)' },
       { label: 'job applications', value: appCount, Icon: WorkSymbol, color: 'var(--work)' },
-      { label: 'social interactions', value: socialCount, Icon: SocialSymbol, color: 'var(--social)' },
+      { label: 'contacts reached', value: socialCount, Icon: SocialSymbol, color: 'var(--social)' },
     ].sort((a, b) => b.value - a.value)[0]
 
-    // Best streak — count consecutive days with routine done
+    // Best streak — longest run of consecutive days with any routine done
     let bestStreak = 0, currentStreak = 0
     const logDates = [...new Set(routineLog?.filter(r => r.done).map(r => r.date) || [])].sort()
     for (let i = 0; i < logDates.length; i++) {
-      if (i === 0) { currentStreak = 1; continue }
-      const prev = new Date(logDates[i - 1])
-      const curr = new Date(logDates[i])
-      const diff = (curr - prev) / 86400000
-      if (diff === 1) { currentStreak++; if (currentStreak > bestStreak) bestStreak = currentStreak }
-      else currentStreak = 1
+      if (i === 0) {
+        currentStreak = 1
+      } else {
+        const prev = new Date(logDates[i - 1])
+        const curr = new Date(logDates[i])
+        const diff = (curr - prev) / 86400000
+        currentStreak = diff === 1 ? currentStreak + 1 : 1
+      }
+      bestStreak = Math.max(bestStreak, currentStreak)
     }
 
     setStats({
@@ -144,7 +158,8 @@ export default function YearlyReview({ onClose }) {
       appCount, interviews, offers, socialCount, uniquePeople,
       avgSleepMins, avgMood, wins, gratitudes, yearSaved,
       totalGoals, doneGoals, goalPct, routinesDone, bestStreak,
-      bigStats, journalCount: journalEntries.length
+      bigStats, journalCount: journalEntries.length,
+      medsTaken, medsTotal, eventsCompleted
     })
 
     if (existing) {
@@ -204,7 +219,7 @@ export default function YearlyReview({ onClose }) {
       <div style={{ fontSize: '72px', fontWeight: 800, color: 'var(--xp)', lineHeight: 1, marginBottom: '8px' }}>{stats.bigStats?.value}</div>
       <div style={{ fontSize: '20px', color: 'var(--muted2)', marginBottom: '32px' }}>{stats.bigStats?.label}</div>
       <div style={{ fontSize: '13px', color: 'var(--muted)', maxWidth: '280px', lineHeight: 1.7 }}>
-        That's {stats.workoutCount} workouts, {stats.totalPages} pages read, and {Math.floor(stats.studyMins / 60)} hours of learning this year.
+        That's {stats.workoutCount} workouts this year, {stats.totalPages} total pages read, and {Math.floor(stats.studyMins / 60)} hours of learning this year.
       </div>
     </div>,
 
@@ -239,11 +254,11 @@ export default function YearlyReview({ onClose }) {
       </div>
       <div style={{ marginBottom: '20px' }}>
         <div style={{ fontSize: '64px', fontWeight: 800, color: 'var(--read)', lineHeight: 1 }}>{stats.booksFinished}</div>
-        <div style={{ fontSize: '16px', color: 'var(--muted2)', marginTop: '4px' }}>books finished</div>
+        <div style={{ fontSize: '16px', color: 'var(--muted2)', marginTop: '4px' }}>total books finished</div>
       </div>
       <div style={{ marginBottom: '20px' }}>
         <div style={{ fontSize: '64px', fontWeight: 800, color: 'var(--learn)', lineHeight: 1 }}>{stats.totalPages}</div>
-        <div style={{ fontSize: '16px', color: 'var(--muted2)', marginTop: '4px' }}>pages read</div>
+        <div style={{ fontSize: '16px', color: 'var(--muted2)', marginTop: '4px' }}>total pages read</div>
       </div>
       <div style={{ marginBottom: '20px' }}>
         <div style={{ fontSize: '64px', fontWeight: 800, color: 'var(--acc)', lineHeight: 1 }}>{Math.floor(stats.studyMins / 60)}h</div>
@@ -262,7 +277,7 @@ export default function YearlyReview({ onClose }) {
           { label: 'Applications', value: stats.appCount, color: 'var(--work)', bg: 'rgba(155,143,255,0.06)', border: 'rgba(155,143,255,0.2)' },
           { label: 'Interviews', value: stats.interviews, color: 'var(--xp)', bg: 'rgba(239,159,39,0.06)', border: 'rgba(239,159,39,0.2)' },
           { label: 'People met', value: stats.uniquePeople, color: 'var(--social)', bg: 'rgba(212,111,160,0.06)', border: 'rgba(212,111,160,0.2)' },
-          { label: 'Interactions', value: stats.socialCount, color: 'var(--social)', bg: 'rgba(212,111,160,0.06)', border: 'rgba(212,111,160,0.2)' },
+          { label: 'Contacts reached', value: stats.socialCount, color: 'var(--social)', bg: 'rgba(212,111,160,0.06)', border: 'rgba(212,111,160,0.2)' },
         ].map((s, i) => (
           <div key={i} style={{ background: s.bg, border: `0.5px solid ${s.border}`, borderRadius: '12px', padding: '16px' }}>
             <div style={{ fontSize: '10px', color: 'var(--muted)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '.5px' }}>{s.label}</div>
@@ -294,10 +309,20 @@ export default function YearlyReview({ onClose }) {
           <div style={{ fontSize: '52px', fontWeight: 800, color: 'var(--acc)' }}>—</div>
         )}
       </div>
-      <div>
+      <div style={{ marginBottom: '24px' }}>
         <div style={{ fontSize: '11px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '8px' }}>Journal entries</div>
         <div style={{ fontSize: '52px', fontWeight: 800, color: 'var(--journal)' }}>{stats.journalCount}</div>
         <div style={{ fontSize: '16px', color: 'var(--muted2)', marginTop: '4px' }}>days reflected on</div>
+      </div>
+      <div style={{ marginBottom: '24px' }}>
+        <div style={{ fontSize: '11px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '8px' }}>Medicines taken</div>
+        <div style={{ fontSize: '52px', fontWeight: 800, color: 'var(--health)' }}>
+          {stats.medsTotal > 0 ? `${stats.medsTaken}/${stats.medsTotal}` : '—'}
+        </div>
+      </div>
+      <div>
+        <div style={{ fontSize: '11px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '8px' }}>Events completed</div>
+        <div style={{ fontSize: '52px', fontWeight: 800, color: 'var(--acc)' }}>{stats.eventsCompleted}</div>
       </div>
     </div>,
 
