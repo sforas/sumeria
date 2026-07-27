@@ -88,8 +88,10 @@ export default function Home() {
   const [currentSetIndex, setCurrentSetIndex] = useState(0)
   const [setReps, setSetReps] = useState('')
   const [completedSets, setCompletedSets] = useState({})
+  const [startTimestamp, setStartTimestamp] = useState(null)
+  const [elapsedMs, setElapsedMs] = useState(0)
   const [restTimer, setRestTimer] = useState(0)
-  const [restInterval, setRestInterval] = useState(null)
+  const [restEndTimestamp, setRestEndTimestamp] = useState(null)
   const [restType, setRestType] = useState(null)
   const [workoutPhase, setWorkoutPhase] = useState('tracking')
   const [notifPerm, setNotifPerm] = useState(typeof Notification !== 'undefined' ? Notification.permission : 'denied')
@@ -106,6 +108,89 @@ export default function Home() {
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchAll() }, [])
+
+  // Restore an in-progress workout from localStorage on mount (survives app
+  // backgrounding / reload — activeTimers alone doesn't carry set-by-set progress)
+  useEffect(() => {
+    const saved = localStorage.getItem('sumeria_active_workout')
+    if (!saved) return
+    try {
+      const data = JSON.parse(saved)
+      const fourHoursAgo = Date.now() - 4 * 60 * 60 * 1000
+      if (data.startTimestamp && data.startTimestamp > fourHoursAgo) {
+        setStartTimestamp(data.startTimestamp)
+        setWorkoutExercises(data.workoutExercises || [])
+        setCurrentExerciseIndex(data.currentExerciseIndex || 0)
+        setCurrentSetIndex(data.currentSetIndex || 0)
+        setCompletedSets(data.completedSets || {})
+        setQuickLog(data.quickLog || {})
+        if (data.restEndTimestamp && data.restEndTimestamp > Date.now()) {
+          setRestEndTimestamp(data.restEndTimestamp)
+          setWorkoutPhase('resting')
+        } else {
+          setWorkoutPhase(data.workoutPhase && data.workoutPhase !== 'resting' ? data.workoutPhase : 'tracking')
+        }
+        setModal({
+          routine: { id: data.routineId, title: data.routineTitle, area: data.routineArea, quick_log_type: 'workout' },
+          isActive: true,
+          isDone: false
+        })
+      } else {
+        localStorage.removeItem('sumeria_active_workout')
+      }
+    } catch {
+      localStorage.removeItem('sumeria_active_workout')
+    }
+  }, [])
+
+  // Elapsed workout timer — driven by a real timestamp so it stays accurate
+  // even if the interval is throttled while the app is backgrounded
+  useEffect(() => {
+    if (!startTimestamp) return
+    setElapsedMs(Date.now() - startTimestamp)
+    const id = setInterval(() => {
+      setElapsedMs(Date.now() - startTimestamp)
+    }, 1000)
+    return () => clearInterval(id)
+  }, [startTimestamp])
+
+  // Rest countdown — driven by the target end timestamp, not a decrementing counter
+  useEffect(() => {
+    if (!restEndTimestamp) return
+    const tick = () => {
+      const remaining = Math.max(0, Math.ceil((restEndTimestamp - Date.now()) / 1000))
+      setRestTimer(remaining)
+      if (remaining <= 0) {
+        setWorkoutPhase('tracking')
+        setRestType(null)
+        setRestEndTimestamp(null)
+        if (navigator.vibrate) navigator.vibrate([300, 100, 300])
+      }
+    }
+    tick()
+    const id = setInterval(tick, 500)
+    return () => clearInterval(id)
+  }, [restEndTimestamp])
+
+  // Persist in-progress workout state so it survives the app being backgrounded/reloaded
+  useEffect(() => {
+    if (modal?.isActive && modal.routine.quick_log_type === 'workout' && startTimestamp) {
+      localStorage.setItem('sumeria_active_workout', JSON.stringify({
+        routineId: modal.routine.id,
+        routineTitle: modal.routine.title,
+        routineArea: modal.routine.area,
+        startTimestamp,
+        workoutExercises,
+        currentExerciseIndex,
+        currentSetIndex,
+        completedSets,
+        workoutPhase,
+        restEndTimestamp,
+        quickLog
+      }))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modal, startTimestamp, workoutExercises, currentExerciseIndex, currentSetIndex, completedSets, workoutPhase, restEndTimestamp, quickLog])
 
   useEffect(() => {
     timerRef.current = setInterval(() => {
@@ -264,12 +349,46 @@ export default function Home() {
         .then(({ data }) => {
           setRoutineExercises(data || [])
           setWorkoutExercises(data || [])
-          setCurrentExerciseIndex(0)
-          setCurrentSetIndex(0)
-          setCompletedSets({})
-          setWorkoutPhase('tracking')
-          setRestTimer(0)
           setSetReps('')
+
+          if (isActive) {
+            // Resuming an in-progress workout — try to restore tracked
+            // progress from localStorage instead of wiping it on reopen
+            let restored = false
+            const saved = localStorage.getItem('sumeria_active_workout')
+            if (saved) {
+              try {
+                const parsed = JSON.parse(saved)
+                if (parsed.routineId === routine.id) {
+                  setCurrentExerciseIndex(parsed.currentExerciseIndex || 0)
+                  setCurrentSetIndex(parsed.currentSetIndex || 0)
+                  setCompletedSets(parsed.completedSets || {})
+                  setQuickLog(parsed.quickLog || {})
+                  if (parsed.restEndTimestamp && parsed.restEndTimestamp > Date.now()) {
+                    setRestEndTimestamp(parsed.restEndTimestamp)
+                    setWorkoutPhase('resting')
+                  } else {
+                    setWorkoutPhase(parsed.workoutPhase && parsed.workoutPhase !== 'resting' ? parsed.workoutPhase : 'tracking')
+                  }
+                  restored = true
+                }
+              } catch { /* corrupt localStorage entry — fall through to reset */ }
+            }
+            if (!restored) {
+              setCurrentExerciseIndex(0)
+              setCurrentSetIndex(0)
+              setCompletedSets({})
+              setWorkoutPhase('tracking')
+              setRestTimer(0)
+            }
+            setStartTimestamp(new Date(activeTimers[routine.id]).getTime())
+          } else {
+            setCurrentExerciseIndex(0)
+            setCurrentSetIndex(0)
+            setCompletedSets({})
+            setWorkoutPhase('tracking')
+            setRestTimer(0)
+          }
         })
     }
   }
@@ -282,6 +401,25 @@ export default function Home() {
     })
     setActiveTimers(prev => ({ ...prev, [routine.id]: now }))
     setElapsed(prev => ({ ...prev, [routine.id]: 0 }))
+    if (routine.quick_log_type === 'workout') {
+      const ts = Date.now()
+      setStartTimestamp(ts)
+      // Write an initial snapshot immediately — the modal closes right after
+      // starting, so the reactive save effect won't fire until it's reopened
+      localStorage.setItem('sumeria_active_workout', JSON.stringify({
+        routineId: routine.id,
+        routineTitle: routine.title,
+        routineArea: routine.area,
+        startTimestamp: ts,
+        workoutExercises,
+        currentExerciseIndex: 0,
+        currentSetIndex: 0,
+        completedSets: {},
+        workoutPhase: 'tracking',
+        restEndTimestamp: null,
+        quickLog: {}
+      }))
+    }
     setModal(null)
     resetWorkoutState()
   }
@@ -296,14 +434,32 @@ export default function Home() {
     if (routine.quick_log_type === 'workout') {
       const result = await addPoints(supabase, 'fitness', 1)
       if (result.stageUp) setStageUp({ district: 'fitness', newStage: result.newStage })
+
+      const rows = []
+      workoutExercises.forEach(ex => {
+        const sets = completedSets[ex.id] || []
+        sets.forEach((rep, idx) => {
+          rows.push({
+            routine_id: routine.id,
+            routine_title: routine.title,
+            exercise_name: ex.name,
+            set_number: idx + 1,
+            reps: typeof rep === 'number' ? rep : null,
+            workout_date: today(),
+            workout_duration_seconds: Math.floor(elapsedMs / 1000)
+          })
+        })
+      })
+      if (rows.length > 0) {
+        await supabase.from('workout_sets').insert(rows)
+      }
     }
     setActiveTimers(prev => { const n = { ...prev }; delete n[routine.id]; return n })
     setElapsed(prev => { const n = { ...prev }; delete n[routine.id]; return n })
+    setStartTimestamp(null)
+    localStorage.removeItem('sumeria_active_workout')
     setModal(null)
     resetWorkoutState()
-    clearInterval(restInterval)
-    setRestTimer(0)
-    setRestInterval(null)
   }
 
   async function completeRoutine(routine, data = {}) {
@@ -401,41 +557,29 @@ export default function Home() {
     setCurrentSetIndex(0)
     setCompletedSets({})
     setSetReps('')
-    clearInterval(restInterval)
     setRestTimer(0)
-    setRestInterval(null)
+    setRestEndTimestamp(null)
   }
 
-  async function sendRestEndNotification() {
+  async function scheduleRestEndNotification(seconds) {
     try {
-      await supabase.functions.invoke('send-push-notification', {
-        body: {
-          title: 'Rest complete',
-          body: 'Time for your next set!'
-        }
-      })
+      setTimeout(async () => {
+        await supabase.functions.invoke('send-push-notification', {
+          body: {
+            title: 'Descanso terminado',
+            body: 'Tiempo para el siguiente set.'
+          }
+        })
+      }, seconds * 1000)
     } catch {}
   }
 
   function startRestTimer(seconds, type) {
-    clearInterval(restInterval)
     setRestType(type)
     setRestTimer(seconds)
+    setRestEndTimestamp(Date.now() + seconds * 1000)
     setWorkoutPhase('resting')
-    const interval = setInterval(() => {
-      setRestTimer(prev => {
-        if (prev <= 1) {
-          clearInterval(interval)
-          setWorkoutPhase('tracking')
-          setRestType(null)
-          if (navigator.vibrate) navigator.vibrate([300, 100, 300])
-          sendRestEndNotification()
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
-    setRestInterval(interval)
+    scheduleRestEndNotification(seconds)
   }
 
   function handleSetComplete() {
@@ -554,7 +698,10 @@ export default function Home() {
     if (!modal) return null
     const { routine, isActive, isDone } = modal
     const type = routine.quick_log_type
-    const elapsedMs = elapsed[routine.id] || 0
+    const sharedElapsedMs = elapsed[routine.id] || 0
+    const totalSets = workoutExercises.reduce((sum, ex) => sum + (parseInt(ex.sets) || 1), 0)
+    const completedSetsCount = Object.values(completedSets).reduce((sum, sets) => sum + sets.length, 0)
+    const workoutProgress = totalSets > 0 ? completedSetsCount / totalSets : 0
 
     return (
       <div onClick={() => { setModal(null); resetWorkoutState() }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.75)', display: 'flex', alignItems: 'flex-end', zIndex: 200 }}>
@@ -585,6 +732,27 @@ export default function Home() {
                 </div>
                 <div style={{ fontSize: '20px', fontWeight: 600, color: 'var(--fit)' }}>
                   {formatElapsed(elapsedMs)}
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '12px' }}>
+                <div style={{
+                  display: 'flex', justifyContent: 'space-between',
+                  fontSize: '10px', color: 'var(--muted)', marginBottom: '4px'
+                }}>
+                  <span>Progreso</span>
+                  <span>{completedSetsCount} / {totalSets} sets</span>
+                </div>
+                <div style={{
+                  height: '3px', background: 'var(--surf3)', borderRadius: '2px'
+                }}>
+                  <div style={{
+                    height: '3px',
+                    background: 'var(--fit)',
+                    borderRadius: '2px',
+                    width: `${workoutProgress * 100}%`,
+                    transition: 'width 0.4s ease'
+                  }} />
                 </div>
               </div>
 
@@ -785,8 +953,9 @@ export default function Home() {
                     </div>
                   )}
                   <button onClick={() => {
-                    clearInterval(restInterval)
+                    setRestEndTimestamp(null)
                     setRestTimer(0)
+                    setRestType(null)
                     setWorkoutPhase('tracking')
                   }} style={{
                     background: 'none', border: '0.5px solid var(--border)',
@@ -798,32 +967,52 @@ export default function Home() {
                 </div>
               )}
 
-              {/* PHASE: complete — all exercises done */}
+              {/* PHASE: complete — workout summary screen */}
               {workoutPhase === 'complete' && (
                 <div>
-                  <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                  <div style={{ textAlign: 'center', marginBottom: '16px' }}>
                     <div style={{
-                      fontSize: '16px', fontWeight: 600,
-                      color: 'var(--fit)', marginBottom: '4px'
+                      fontSize: '18px', fontWeight: 600,
+                      color: 'var(--fit)', marginBottom: '4px', fontFamily: 'Georgia, serif'
                     }}>
-                      All exercises complete
+                      Workout completo
                     </div>
-                    <div style={{ fontSize: '12px', color: 'var(--muted)' }}>
-                      {formatElapsed(elapsedMs)} total
+                    <div style={{ fontSize: '13px', color: 'var(--muted)' }}>
+                      {formatElapsed(elapsedMs)} · {completedSetsCount} sets completados
                     </div>
                   </div>
 
-                  {/* Summary */}
+                  {/* Progress bar at 100% */}
+                  <div style={{
+                    height: '3px', background: 'var(--fit)',
+                    borderRadius: '2px', marginBottom: '16px'
+                  }} />
+
+                  {/* Exercise summary */}
                   {workoutExercises.map(ex => {
                     const done = getCompletedRepsForExercise(ex.id)
+                    const target = parseInt(ex.sets) || 1
+                    const completed = done.length
                     return (
                       <div key={ex.id} style={{
                         display: 'flex', justifyContent: 'space-between',
-                        padding: '7px 0', borderBottom: '0.5px solid var(--border)'
+                        alignItems: 'flex-start', padding: '8px 0',
+                        borderBottom: '0.5px solid var(--border)'
                       }}>
-                        <div style={{ fontSize: '12px', color: 'var(--muted)' }}>{ex.name}</div>
-                        <div style={{ fontSize: '12px', color: 'var(--fit)', fontWeight: 500 }}>
-                          {done.map(r => r === 'done' ? '✓' : r).join(' · ')}
+                        <div>
+                          <div style={{ fontSize: '13px', color: 'var(--text)', fontWeight: 500 }}>
+                            {ex.name}
+                          </div>
+                          <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>
+                            {completed}/{target} sets
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          {done.map((rep, i) => (
+                            <div key={i} style={{ fontSize: '12px', color: 'var(--fit)', fontWeight: 500 }}>
+                              Set {i + 1}: {rep === 'done' ? 'hecho' : `${rep} reps`}
+                            </div>
+                          ))}
                         </div>
                       </div>
                     )
@@ -835,14 +1024,14 @@ export default function Home() {
                       borderRadius: '10px', color: '#000', fontSize: '14px',
                       padding: '14px', cursor: 'pointer', fontWeight: 600
                     }}>
-                      Finish workout
+                      Guardar workout
                     </button>
                     <button onClick={() => setWorkoutPhase('tracking')} style={{
                       background: 'var(--surf3)', border: '0.5px solid var(--border)',
                       borderRadius: '10px', color: 'var(--muted)',
                       fontSize: '13px', padding: '14px 16px', cursor: 'pointer'
                     }}>
-                      Continue
+                      Continuar
                     </button>
                   </div>
                 </div>
@@ -852,6 +1041,8 @@ export default function Home() {
               {workoutPhase !== 'complete' && (
                 <button onClick={() => {
                   setActiveTimers(prev => { const n = { ...prev }; delete n[routine.id]; return n })
+                  setStartTimestamp(null)
+                  localStorage.removeItem('sumeria_active_workout')
                   setModal(null)
                   resetWorkoutState()
                 }} style={{
@@ -871,7 +1062,7 @@ export default function Home() {
           {isActive && type !== 'workout' && (
             <>
               <div style={{ textAlign: 'center', marginBottom: '20px', padding: '16px', background: 'var(--surf3)', borderRadius: '10px' }}>
-                <div style={{ fontSize: '40px', fontWeight: 500, color: 'var(--fit)' }}>{formatElapsed(elapsedMs)}</div>
+                <div style={{ fontSize: '40px', fontWeight: 500, color: 'var(--fit)' }}>{formatElapsed(sharedElapsedMs)}</div>
                 <div style={{ fontSize: '12px', color: 'var(--muted2)', marginTop: '4px' }}>Timer running</div>
               </div>
               {type === 'reading' && (
@@ -899,7 +1090,7 @@ export default function Home() {
                 </>
               )}
               <button onClick={() => finishTimer(routine)} style={{ width: '100%', background: 'var(--fit)', border: 'none', borderRadius: '8px', color: '#000', fontSize: '14px', padding: '13px', cursor: 'pointer', fontWeight: 600, marginBottom: '8px' }}>
-                ✓ Finish — {formatElapsed(elapsedMs)}
+                ✓ Finish — {formatElapsed(sharedElapsedMs)}
               </button>
               <button onClick={() => {
                 setActiveTimers(prev => { const n = { ...prev }; delete n[routine.id]; return n })
