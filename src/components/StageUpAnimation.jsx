@@ -25,7 +25,7 @@ export default function StageUpAnimation({ district, newStage, onComplete }) {
 
   const color = COLORS[district]
   const { width, height } = STAGE_DIMENSIONS[newStage]
-  const content = getBuildingRender(district, newStage, height)
+  const content = getBuildingRender(district, newStage, height, color)
 
   return (
     <div onClick={onComplete} style={{
@@ -41,7 +41,7 @@ export default function StageUpAnimation({ district, newStage, onComplete }) {
           <line x1="5" y1="120" x2="95" y2="120" stroke={color} strokeOpacity="0.3" />
           <g
             transform={`translate(${50 - width / 2}, ${120 - height})`}
-            fill={color} fillOpacity="0.9" stroke={color} strokeWidth="1.5"
+            fill="none" stroke={color} strokeWidth="1.5"
           >
             {content}
           </g>

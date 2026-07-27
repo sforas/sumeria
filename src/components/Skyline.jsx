@@ -1,6 +1,17 @@
 import { getPeriod } from '../lib/useAtmosphere'
 import { getStageAndProgress } from '../lib/districtPoints'
 import { DISTRICT_ORDER, COLORS, getBuildingSize, getBuildingRender } from '../lib/buildingRenders'
+import {
+  FitnessSymbol, WorkSymbol, ReadingSymbol, LearningSymbol,
+  SocialSymbol, HealthSymbol, SavingsSymbol, JournalSymbol
+} from './icons/DistrictSymbols'
+
+const DISTRICT_SYMBOLS = {
+  fitness: FitnessSymbol, work: WorkSymbol, reading: ReadingSymbol, learning: LearningSymbol,
+  social: SocialSymbol, health: HealthSymbol, savings: SavingsSymbol, journal: JournalSymbol
+}
+
+const BUILDING_X = [10, 50, 90, 130, 170, 210, 250, 290]
 
 function sunMoonPosition() {
   const now = new Date()
@@ -12,7 +23,6 @@ function sunMoonPosition() {
 }
 
 const GROUND_Y = 128
-const SLOT_WIDTH = 40
 
 export default function Skyline({ points = {}, onBuildingClick }) {
   const period = getPeriod()
@@ -51,25 +61,34 @@ export default function Skyline({ points = {}, onBuildingClick }) {
 
       {/* Ground */}
       <rect x="0" y={GROUND_Y} width="320" height={140 - GROUND_Y} fill="var(--surf)" />
-      <line x1="0" y1={GROUND_Y} x2="320" y2={GROUND_Y} stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
+      <line x1="0" y1={GROUND_Y} x2="320" y2={GROUND_Y} stroke="var(--sand)" strokeOpacity="0.4" strokeWidth="1" />
 
       {/* Buildings */}
       {DISTRICT_ORDER.map((district, i) => {
         const pts = points[district] || 0
         const { stage, progress } = getStageAndProgress(district, pts)
         const { width, height } = getBuildingSize(stage, progress)
-        const slotX = i * SLOT_WIDTH + (SLOT_WIDTH - width) / 2
         const color = COLORS[district]
-        const content = getBuildingRender(district, stage, height)
+        const content = getBuildingRender(district, stage, height, color)
         return (
           <g
             key={district}
-            transform={`translate(${slotX}, ${GROUND_Y - height})`}
-            fill={color} fillOpacity="0.85" stroke={color} strokeWidth="1"
+            transform={`translate(${BUILDING_X[i] - width / 2}, ${GROUND_Y - height})`}
+            fill="none" stroke={color} strokeWidth="1.3"
             onClick={onBuildingClick ? () => onBuildingClick(district) : undefined}
             style={onBuildingClick ? { cursor: 'pointer' } : undefined}
           >
             {content}
+          </g>
+        )
+      })}
+
+      {/* District symbols */}
+      {DISTRICT_ORDER.map((district, i) => {
+        const Symbol = DISTRICT_SYMBOLS[district]
+        return (
+          <g key={`label-${district}`} transform={`translate(${BUILDING_X[i] - 5}, 131)`} style={{ color: COLORS[district] }}>
+            <Symbol size={10} />
           </g>
         )
       })}
