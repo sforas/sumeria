@@ -69,7 +69,7 @@ export default function Skyline({ points = {}, onBuildingClick }) {
         const { stage, progress } = getStageAndProgress(district, pts)
         const { width, height } = getBuildingSize(stage, progress)
         const color = COLORS[district]
-        const content = getBuildingRender(district, stage, height, color)
+        const content = getBuildingRender(district, stage, width, height, color)
         return (
           <g
             key={district}

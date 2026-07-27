@@ -4,7 +4,8 @@ import { Notifs } from '../lib/notifications'
 import { FitnessSymbol, WorkSymbol, ReadingSymbol, LearningSymbol, SocialSymbol, HealthSymbol, SavingsSymbol } from '../components/icons/DistrictSymbols'
 import { getWorkoutIcon } from '../components/icons/getWorkoutIcon'
 import { useAtmosphere } from '../lib/useAtmosphere'
-import { addPoints } from '../lib/districtPoints'
+import { addPoints, getStageAndProgress, STAGE_THRESHOLDS, STAGE_NAMES } from '../lib/districtPoints'
+import { COLORS as DISTRICT_COLORS } from '../lib/buildingRenders'
 import Skyline from '../components/Skyline'
 import StageUpAnimation from '../components/StageUpAnimation'
 import ZigguratPicker from '../components/ZigguratPicker'
@@ -59,6 +60,7 @@ export default function Home() {
 
   const [districtPoints, setDistrictPoints] = useState({})
   const [stageUp, setStageUp] = useState(null)
+  const [selectedDistrict, setSelectedDistrict] = useState(null)
   const [goals, setGoals] = useState([])
   const [routineItems, setRoutineItems] = useState([])
   const [routineLog, setRoutineLog] = useState({})
@@ -1319,8 +1321,84 @@ export default function Home() {
     <div style={{ padding: '16px', paddingBottom: '24px' }}>
 
       <div style={{ background: 'var(--surf)', borderBottom: '0.5px solid var(--border)', padding: '8px 0 0' }}>
-        <Skyline points={districtPoints} />
+        <Skyline
+          points={districtPoints}
+          onBuildingClick={(district) => setSelectedDistrict(
+            selectedDistrict === district ? null : district
+          )}
+        />
       </div>
+
+      {selectedDistrict && (() => {
+        const pts = districtPoints[selectedDistrict] || 0
+        const { stage, progress } = getStageAndProgress(selectedDistrict, pts)
+        const thresholds = STAGE_THRESHOLDS[selectedDistrict]
+        const nextThreshold = thresholds[Math.min(stage + 1, 5)]
+        const color = DISTRICT_COLORS[selectedDistrict]
+        const stageName = STAGE_NAMES[selectedDistrict]?.[stage] || ''
+
+        return (
+          <div style={{
+            margin: '8px 0',
+            padding: '12px 14px',
+            background: 'var(--surf)',
+            border: `0.5px solid ${color}`,
+            borderRadius: '10px',
+            borderLeft: `2px solid ${color}`
+          }}>
+            <div style={{
+              display: 'flex', justifyContent: 'space-between',
+              alignItems: 'flex-start', marginBottom: '8px'
+            }}>
+              <div>
+                <div style={{
+                  fontFamily: 'Georgia, serif', fontSize: '15px',
+                  color, fontWeight: 500, marginBottom: '2px'
+                }}>
+                  {selectedDistrict.charAt(0).toUpperCase() + selectedDistrict.slice(1)}
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--muted)' }}>
+                  {stageName}
+                </div>
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--muted2)', textAlign: 'right' }}>
+                <div>{pts} pts</div>
+                {stage < 5 && (
+                  <div style={{ marginTop: '2px' }}>
+                    Meta: {nextThreshold} pts
+                  </div>
+                )}
+              </div>
+            </div>
+            {stage < 5 && (
+              <div>
+                <div style={{
+                  height: '3px', background: 'var(--surf3)',
+                  borderRadius: '2px', overflow: 'hidden'
+                }}>
+                  <div style={{
+                    height: '100%', borderRadius: '2px',
+                    background: color,
+                    width: `${progress * 100}%`,
+                    transition: 'width 0.3s ease'
+                  }} />
+                </div>
+                <div style={{
+                  fontSize: '10px', color: 'var(--muted2)',
+                  marginTop: '3px', textAlign: 'right'
+                }}>
+                  {Math.round(progress * 100)}% hacia {STAGE_NAMES[selectedDistrict]?.[stage + 1]}
+                </div>
+              </div>
+            )}
+            {stage === 5 && (
+              <div style={{ fontSize: '11px', color, textAlign: 'center' }}>
+                Nivel maximo alcanzado
+              </div>
+            )}
+          </div>
+        )
+      })()}
 
       <div style={{ marginBottom: '14px' }}>
         <div style={{ fontSize: '20px', fontWeight: 500, marginBottom: '3px' }}>{getGreeting()}</div>

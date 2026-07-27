@@ -15,7 +15,7 @@ export default function StageUpAnimation({ district, newStage, onComplete }) {
 
   const color = COLORS[district]
   const { width, height } = STAGE_DIMENSIONS[newStage]
-  const content = getBuildingRender(district, newStage, height, color)
+  const content = getBuildingRender(district, newStage, width, height, color)
 
   return (
     <div onClick={onComplete} style={{

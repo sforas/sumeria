@@ -713,7 +713,7 @@ const BUILDINGS = {
   savings: SAVINGS_STAGES, journal: JOURNAL_STAGES
 }
 
-export function getBuildingRender(district, stage, h, color) {
+export function getBuildingRender(district, stage, w, h, color) {
   const fn = BUILDINGS[district]?.[stage]
-  return fn ? fn(STAGE_DIMENSIONS[stage].width, h, color) : null
+  return fn ? fn(w, h, color) : null
 }
