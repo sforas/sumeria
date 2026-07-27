@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { ReadingSymbol } from '../components/icons/DistrictSymbols'
+import { addPoints } from '../lib/districtPoints'
 
 function today() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
@@ -77,6 +78,11 @@ export default function Reading() {
     setShowLogPages(null)
     await supabase.from('xp_log').insert({ amount: 15, reason: 'Pages logged', date: today() })
     if (status === 'finished') await supabase.from('xp_log').insert({ amount: 200, reason: 'Book finished!', date: today() })
+
+    // 1 point per 100 pages added
+    const pagesAdded = updatedPages - (book.pages_read || 0)
+    const pointsToAdd = Math.floor(pagesAdded / 100)
+    if (pointsToAdd > 0) await addPoints(supabase, 'reading', pointsToAdd)
   }
 
   async function deleteBook(id) {

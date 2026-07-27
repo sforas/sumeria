@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { addPoints } from '../lib/districtPoints'
 
 const STATUSES = [
   { id: 'applied', label: 'Applied', color: '#666' },
@@ -57,6 +58,7 @@ export default function Work() {
     setNewApp({ company: '', role: '', status: 'applied', notes: '' })
     setShowAdd(false)
     await supabase.from('xp_log').insert({ amount: 40, reason: 'Job application sent', date: today() })
+    await addPoints(supabase, 'work', 1)
   }
 
   async function saveApplication() {

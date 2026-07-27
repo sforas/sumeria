@@ -4,8 +4,9 @@ import { Notifs } from '../lib/notifications'
 import { FitnessSymbol, WorkSymbol, ReadingSymbol, LearningSymbol, SocialSymbol, HealthSymbol, SavingsSymbol } from '../components/icons/DistrictSymbols'
 import { getWorkoutIcon } from '../components/icons/getWorkoutIcon'
 import { useAtmosphere } from '../lib/useAtmosphere'
-import { useDistrictScores } from '../lib/useDistrictScores'
+import { addPoints } from '../lib/districtPoints'
 import Skyline from '../components/Skyline'
+import StageUpAnimation from '../components/StageUpAnimation'
 import ZigguratPicker from '../components/ZigguratPicker'
 
 function today() {
@@ -31,6 +32,12 @@ const AREA_ICONS = {
   learning: LearningSymbol, social: SocialSymbol, health: HealthSymbol, savings: SavingsSymbol
 }
 
+const areaToDistrict = {
+  reading: 'reading', learning: 'learning',
+  social: 'social', health: 'health',
+  work: 'work', savings: 'savings', journal: 'journal'
+}
+
 const AREAS = [
   { id: 'fitness', label: 'Fitness', color: 'var(--fit)' },
   { id: 'work', label: 'Work', color: 'var(--work)' },
@@ -49,8 +56,9 @@ function formatElapsed(ms) {
 
 export default function Home() {
   useAtmosphere()
-  const { scores } = useDistrictScores()
 
+  const [districtPoints, setDistrictPoints] = useState({})
+  const [stageUp, setStageUp] = useState(null)
   const [goals, setGoals] = useState([])
   const [routineItems, setRoutineItems] = useState([])
   const [routineLog, setRoutineLog] = useState({})
@@ -128,7 +136,8 @@ export default function Home() {
       { data: coursesData },
       { data: journalData },
       { data: mantraData },
-      { data: calendarEventsData }
+      { data: calendarEventsData },
+      { data: districtPointsData }
     ] = await Promise.all([
       supabase.from('goals').select('*').eq('date', today()).order('created_at'),
       supabase.from('routines').select('*').eq('active', true),
@@ -142,7 +151,8 @@ export default function Home() {
       supabase.from('courses').select('*').eq('status', 'active'),
       supabase.from('daily_journal').select('*').eq('date', today()).single(),
       supabase.from('settings').select('*').eq('key', 'mantra').single(),
-      supabase.from('calendar_events').select('*').eq('date', today()).order('time', { ascending: true, nullsFirst: false })
+      supabase.from('calendar_events').select('*').eq('date', today()).order('time', { ascending: true, nullsFirst: false }),
+      supabase.from('district_points').select('*')
     ])
 
     const currentHour = new Date().getHours()
@@ -183,6 +193,10 @@ export default function Home() {
     const j = journalData || null
     setJournal(j)
     setMantra(mantraData?.value || 'Build your city. Build yourself.')
+
+    const pts = {}
+    districtPointsData?.forEach(d => { pts[d.district] = d.points })
+    setDistrictPoints(pts)
 
     // Show morning checks if not done yet
     const todayKey = today()
@@ -279,6 +293,10 @@ export default function Home() {
       .update({ ended_at: new Date().toISOString(), duration_min: durationMin, notes: quickLog.notes || '' })
       .eq('routine_id', routine.id).eq('date', today()).is('ended_at', null)
     await completeRoutine(routine, { ...quickLog, duration_min: durationMin })
+    if (routine.quick_log_type === 'workout') {
+      const result = await addPoints(supabase, 'fitness', 1)
+      if (result.stageUp) setStageUp({ district: 'fitness', newStage: result.newStage })
+    }
     setActiveTimers(prev => { const n = { ...prev }; delete n[routine.id]; return n })
     setElapsed(prev => { const n = { ...prev }; delete n[routine.id]; return n })
     setModal(null)
@@ -349,6 +367,18 @@ export default function Home() {
     }
     setRoutineLog(prev => ({ ...prev, [routine.id]: { ...prev[routine.id], done: true } }))
     await supabase.from('xp_log').insert({ amount: 50, reason: `Routine: ${routine.title}`, date: today() })
+
+    if (type === 'reflection') {
+      const result = await addPoints(supabase, 'journal', 1)
+      if (result.stageUp) setStageUp({ district: 'journal', newStage: result.newStage })
+    } else if (type !== 'workout') {
+      const district = areaToDistrict[routine.area]
+      if (district) {
+        const result = await addPoints(supabase, district, 1)
+        if (result.stageUp) setStageUp({ district, newStage: result.newStage })
+      }
+    }
+
     setModal(null)
     resetWorkoutState()
   }
@@ -483,7 +513,11 @@ export default function Home() {
       await supabase.from('med_log').insert({ medicine_id: med.id, date: today(), taken: true })
     }
     setMedLog(prev => ({ ...prev, [med.id]: !current }))
-    if (!current) await supabase.from('xp_log').insert({ amount: 10, reason: 'Medicine taken', date: today() })
+    if (!current) {
+      await supabase.from('xp_log').insert({ amount: 10, reason: 'Medicine taken', date: today() })
+      const result = await addPoints(supabase, 'health', 0.5)
+      if (result.stageUp) setStageUp({ district: 'health', newStage: result.newStage })
+    }
   }
 
   async function dismissReminder(id) {
@@ -1094,7 +1128,7 @@ export default function Home() {
     <div style={{ padding: '16px', paddingBottom: '24px' }}>
 
       <div style={{ background: 'var(--surf)', borderBottom: '0.5px solid var(--border)', padding: '8px 0 0' }}>
-        <Skyline scores={scores} />
+        <Skyline points={districtPoints} />
       </div>
 
       <div style={{ marginBottom: '14px' }}>
@@ -1415,6 +1449,14 @@ export default function Home() {
       )}
 
       {renderModal()}
+
+      {stageUp && (
+        <StageUpAnimation
+          district={stageUp.district}
+          newStage={stageUp.newStage}
+          onComplete={() => setStageUp(null)}
+        />
+      )}
     </div>
   )
-}   
+}

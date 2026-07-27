@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { addPoints } from '../lib/districtPoints'
 
 function today() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
@@ -140,6 +141,11 @@ export default function Learning() {
       if (updatedCourse) setCourses(prev => prev.map(c => c.id === sessionCourse.id ? updatedCourse : c))
     }
     await supabase.from('xp_log').insert({ amount: Math.round(parseInt(sessionData.minutes) / 10) * 10, reason: 'Study session logged', date: today() })
+
+    // 1 point per 60 minutes
+    const pointsToAdd = Math.floor(parseInt(sessionData.minutes) / 60)
+    if (pointsToAdd > 0) await addPoints(supabase, 'learning', pointsToAdd)
+
     setSessionCourse(null)
     setSessionData({ minutes: '', module_number: '', notes: '' })
   }

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { addPoints } from '../lib/districtPoints'
 
 const RELATIONSHIP_TYPES = ['Friend', 'Family', 'Work', 'Partner', 'Other']
 
@@ -266,6 +267,7 @@ export default function Social() {
   async function toggleReminderDone(reminder) {
     await supabase.from('contact_reminders').update({ done: !reminder.done }).eq('id', reminder.id)
     setContactReminders(prev => prev.map(r => r.id === reminder.id ? { ...r, done: !reminder.done } : r))
+    if (!reminder.done) await addPoints(supabase, 'social', 1)
   }
 
   const filteredContacts = contacts.filter(c => c.name.toLowerCase().includes(search.toLowerCase()))

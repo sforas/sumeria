@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { addPoints } from '../lib/districtPoints'
 
 function today() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
@@ -50,6 +51,12 @@ export default function Savings() {
     if (data) setTransactions([data, ...transactions])
     setNewTx({ description: '', amount: '', type: 'saving' })
     setShowAdd(false)
+
+    if (newTx.type === 'saving') {
+      // 1 point per $10,000 MXN saved
+      const pointsToAdd = Math.floor(amount / 10000)
+      if (pointsToAdd > 0) await addPoints(supabase, 'savings', pointsToAdd)
+    }
   }
 
   async function saveTransaction() {
