@@ -9,6 +9,17 @@ export const STAGE_THRESHOLDS = {
   journal:  [0, 1, 6,  15, 30, 60],
 }
 
+export const STAGE_NAMES = {
+  fitness: ['', 'Ruinas griegas', 'Gimnasio', 'Arena', 'Anfiteatro', 'Coliseo'],
+  work: ['', 'Puesto de mercado', 'Tienda', 'Edificio de oficinas', 'Torre comercial', 'Rascacielos'],
+  reading: ['', 'Piedra inscrita', 'Estante de pergaminos', 'Biblioteca pequeña', 'Biblioteca', 'Biblioteca de Alejandría'],
+  learning: ['', 'Salón de clases', 'Salón exterior', 'Academia', 'Universidad', 'Gran universidad'],
+  social: ['', 'Pozo del pueblo', 'Plaza', 'Ágora', 'Teatro griego', 'Gran teatro'],
+  health: ['', 'Altar', 'Capilla', 'Templo pequeño', 'Templo', 'Partenón'],
+  savings: ['', 'Ánfora', 'Silos', 'Banco pequeño', 'Banco', 'Tesoro real'],
+  journal: ['', 'Tablilla de arcilla', 'Scriptorium', 'Biblioteca de crónicas', 'Sala de lectura', 'Gran archivo']
+}
+
 // Returns stage 0-5 and progress 0-1 within stage
 export function getStageAndProgress(district, points) {
   const thresholds = STAGE_THRESHOLDS[district]

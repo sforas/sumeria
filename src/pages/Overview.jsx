@@ -1,37 +1,44 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, Tooltip } from 'recharts'
+import { DISTRICT_ORDER, COLORS } from '../lib/buildingRenders'
+import { STAGE_THRESHOLDS, STAGE_NAMES, getStageAndProgress } from '../lib/districtPoints'
 import WeeklyReview from './WeeklyReview'
 import MonthlyReview from './MonthlyReview'
 import YearlyReview from './YearlyReview'
+
+const DISTRICT_LABELS = {
+  fitness: 'Fitness', work: 'Work', reading: 'Reading', learning: 'Learning',
+  social: 'Social', health: 'Health', savings: 'Savings', journal: 'Journal'
+}
 
 function today() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
 }
 
-function weekAgo() {
-  const d = new Date()
-  d.setDate(d.getDate() - 7)
-  return d.toISOString().slice(0, 10)
+function shiftDateString(dateStr, days) {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const dt = new Date(Date.UTC(y, m - 1, d))
+  dt.setUTCDate(dt.getUTCDate() + days)
+  return dt.toISOString().slice(0, 10)
 }
 
-function monthStart() {
-  return today().slice(0, 7) + '-01'
+function weekAgo() {
+  return shiftDateString(today(), -7)
+}
+
+function monthAgo() {
+  return shiftDateString(today(), -30)
 }
 
 function yearStart() {
   return today().slice(0, 4) + '-01-01'
 }
 
-function monthAgo() {
-  const d = new Date()
-  d.setDate(d.getDate() - 30)
-  return d.toISOString().slice(0, 10)
-}
-
 export default function Overview() {
   const [period, setPeriod] = useState('week')
   const [scores, setScores] = useState(null)
+  const [districtPoints, setDistrictPoints] = useState({})
   const [loading, setLoading] = useState(true)
   const [insight, setInsight] = useState('')
   const [showWeekly, setShowWeekly] = useState(false)
@@ -43,111 +50,94 @@ export default function Overview() {
 
   async function fetchScores() {
     setLoading(true)
-    const from = period === 'week' ? weekAgo() : period === 'month' ? monthStart() : yearStart()
+    const from = period === 'week' ? weekAgo() : period === 'month' ? monthAgo() : yearStart()
+    const days = period === 'week' ? 7 : period === 'month' ? 30 : 365
 
     const [
       { data: workouts },
       { data: applications },
-      { data: meals },
       { data: books },
       { data: sessions },
-      { data: completedReminders },
-      { data: activeContacts },
-      { data: sleep },
-      { data: medLog },
-      { data: allSavings }
+      { data: remindersDone },
+      { data: medicines },
+      { data: medLogPeriod },
+      { data: sleepPeriod },
+      { data: allSavings },
+      { data: districtPointsData }
     ] = await Promise.all([
       supabase.from('workouts').select('date').gte('date', from),
       supabase.from('applications').select('date').gte('date', from),
-      supabase.from('meals').select('date').gte('date', from),
-      supabase.from('books').select('pages_read, status'),
+      supabase.from('books').select('pages_read'),
       supabase.from('study_sessions').select('minutes').gte('date', from),
-      supabase.from('contact_reminders').select('id').eq('done', true).gte('remind_on', monthAgo()),
-      supabase.from('contacts').select('id').not('contact_frequency', 'is', null).neq('contact_frequency', 'none'),
-      supabase.from('sleep_log').select('sleep_time, wake_time').gte('date', from),
+      supabase.from('contact_reminders').select('id').eq('done', true).gte('remind_on', from),
+      supabase.from('medicines').select('id'),
       supabase.from('med_log').select('taken').gte('date', from),
-      supabase.from('transactions').select('amount').eq('type', 'saving')
+      supabase.from('sleep_log').select('id').gte('date', from),
+      supabase.from('transactions').select('amount').eq('type', 'saving'),
+      supabase.from('district_points').select('*')
     ])
 
-    const days = period === 'week' ? 7 : period === 'month' ? 30 : 365
-
-    // Fitness score
+    // Fitness — workouts in the period
     const workoutCount = workouts?.length || 0
-    const workoutTarget = period === 'week' ? 5 : period === 'month' ? 20 : 240
-    const fitnessScore = Math.min(Math.round(workoutCount / workoutTarget * 100), 100)
+    const fitnessTarget = period === 'week' ? 4 : period === 'month' ? 16 : 150
+    const fitnessScore = Math.min(Math.round(workoutCount / fitnessTarget * 100), 100)
 
-    // Work score — job applications submitted in the period
+    // Work — applications in the period
     const appCount = applications?.length || 0
-    const appTarget = period === 'week' ? 5 : period === 'month' ? 20 : 240
-    const workScore = Math.min(Math.round(appCount / appTarget * 100), 100)
+    const workTarget = period === 'week' ? 5 : period === 'month' ? 20 : 200
+    const workScore = Math.min(Math.round(appCount / workTarget * 100), 100)
 
-    // Diet score
-    const dietDays = [...new Set(meals?.map(m => m.date) || [])].length
-    const dietScore = Math.min(Math.round(dietDays / days * 100), 100)
+    // Reading — total progress (books has no updated_at, so pages_read is
+    // necessarily an all-time total, not a true per-period count)
+    const totalPagesRead = books?.reduce((sum, b) => sum + (b.pages_read || 0), 0) || 0
+    const readTarget = period === 'week' ? 300 : period === 'month' ? 1200 : 10000
+    const readScore = Math.min(Math.round(totalPagesRead / readTarget * 100), 100)
 
-    // Reading score — books finished. Note: pages_read/status have no timestamp
-    // of when they changed (books has no updated_at column), so "finished" is
-    // necessarily an all-time count, scored against a period-scaled target like
-    // the other scores rather than true period-scoped progress.
-    const booksFinished = books?.filter(b => b.status === 'finished').length || 0
-    const readTarget = period === 'week' ? 1 : period === 'month' ? 2 : 12
-    const readScore = Math.min(Math.round(booksFinished / readTarget * 100), 100)
-
-    // Learning score
+    // Learning — study minutes in the period
     const studyMins = sessions?.reduce((sum, s) => sum + (s.minutes || 0), 0) || 0
-    const studyTarget = period === 'week' ? 300 : period === 'month' ? 1200 : 14400
-    const learnScore = Math.min(Math.round(studyMins / studyTarget * 100), 100)
+    const learnTarget = period === 'week' ? 120 : period === 'month' ? 480 : 3000
+    const learnScore = Math.min(Math.round(studyMins / learnTarget * 100), 100)
 
-    // Social score — 60% from contact_reminders completed in the last 30 days (goal: 8),
-    // 40% from contacts with an active contact_frequency set (goal: 10). Not period-scoped:
-    // it's inherently a rolling 30-day + current-snapshot metric, same as the skyline's version.
-    const completedCount = completedReminders?.length || 0
-    const activeContactCount = activeContacts?.length || 0
-    const socialScore = Math.min(Math.round((completedCount / 8 * 60) + (activeContactCount / 10 * 40)), 100)
+    // Social — contact reminders completed in the period
+    const remindersDoneCount = remindersDone?.length || 0
+    const socialTarget = period === 'week' ? 3 : period === 'month' ? 12 : 100
+    const socialScore = Math.min(Math.round(remindersDoneCount / socialTarget * 100), 100)
 
-    // Health score — only averages components that actually have data,
-    // so a period with no medicines/sleep logged isn't silently scored 0.
-    const totalMedLogs = medLog?.length || 0
-    const medScore = totalMedLogs > 0
-      ? Math.round(medLog.filter(m => m.taken).length / totalMedLogs * 100)
-      : null
-    const goodSleep = sleep?.filter(s => {
-      const [sh, sm] = (s.sleep_time || '00:00').split(':').map(Number)
-      const [wh, wm] = (s.wake_time || '00:00').split(':').map(Number)
-      let mins = (wh * 60 + wm) - (sh * 60 + sm)
-      if (mins < 0) mins += 1440
-      return mins >= 420
-    }).length || 0
-    const sleepScore = sleep?.length > 0 ? Math.round(goodSleep / sleep.length * 100) : null
-    const healthComponents = [medScore, sleepScore].filter(s => s !== null)
-    const healthScore = healthComponents.length > 0
-      ? Math.round(healthComponents.reduce((a, b) => a + b, 0) / healthComponents.length)
-      : 0
+    // Health — (meds taken + sleep logs) / (expected meds + 1 per day),
+    // falls back to sleep-only if no medicines are configured
+    const expectedMedsPerDay = medicines?.length || 0
+    const medsTakenCount = medLogPeriod?.filter(m => m.taken).length || 0
+    const sleepCount = sleepPeriod?.length || 0
+    const healthScore = expectedMedsPerDay > 0
+      ? Math.min(Math.round((medsTakenCount + sleepCount) / (expectedMedsPerDay * days + days) * 100), 100)
+      : Math.min(Math.round(sleepCount / days * 100), 100)
 
-    // Savings score — all-time total saved vs. the fixed emergency fund goal.
-    // Always the same regardless of period, not prorated — it's a running total, not a period metric.
+    // Savings — all-time total saved vs. the fixed emergency fund goal, never period-based
     const emergencyGoal = 100000
     const totalSaved = allSavings?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0
     const savingsScore = Math.min(Math.round(totalSaved / emergencyGoal * 100), 100)
 
     const data = [
       { area: 'Fitness', score: fitnessScore, color: 'var(--fit)' },
-      { area: 'Work', score: workScore, color: 'var(--work)' },
-      { area: 'Diet', score: dietScore, color: 'var(--diet)' },
-      { area: 'Reading', score: readScore, color: 'var(--read)' },
-      { area: 'Learning', score: learnScore, color: 'var(--learn)' },
+      { area: 'Trabajo', score: workScore, color: 'var(--work)' },
+      { area: 'Lectura', score: readScore, color: 'var(--read)' },
+      { area: 'Aprendizaje', score: learnScore, color: 'var(--learn)' },
       { area: 'Social', score: socialScore, color: 'var(--social)' },
-      { area: 'Health', score: healthScore, color: 'var(--health)' },
-      { area: 'Savings', score: savingsScore, color: 'var(--savings)' },
+      { area: 'Salud', score: healthScore, color: 'var(--health)' },
+      { area: 'Ahorros', score: savingsScore, color: 'var(--savings)' },
     ]
 
     setScores(data)
 
-    // Generate insight
+    const pts = {}
+    districtPointsData?.forEach(d => { pts[d.district] = d.points })
+    setDistrictPoints(pts)
+
+    // Insight (Spanish)
     const sorted = [...data].sort((a, b) => b.score - a.score)
     const best = sorted[0]
     const worst = sorted[sorted.length - 1]
-    setInsight(`Your strongest area is ${best.area} (${best.score}%). Focus on ${worst.area} (${worst.score}%) — it's your biggest opportunity this ${period}.`)
+    setInsight(`Tu área más fuerte es ${best.area} (${best.score}%). ${worst.area} necesita más atención (${worst.score}%).`)
 
     setLoading(false)
   }
@@ -211,7 +201,7 @@ export default function Overview() {
                     color: 'var(--text)',
                     fontSize: '12px'
                   }}
-                  formatter={(value) => [`${value}%`, 'Score']}
+                  formatter={(value) => [`${value}%`, 'Puntaje']}
                 />
               </RadarChart>
             </ResponsiveContainer>
@@ -252,12 +242,48 @@ export default function Overview() {
             background: 'var(--surf)', border: '0.5px solid var(--border)',
             borderLeft: '2px solid var(--acc)',
             borderRadius: '0 10px 10px 0',
-            padding: '12px 14px'
+            padding: '12px 14px', marginBottom: '12px'
           }}>
             <div style={{ fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '6px' }}>
               Insight
             </div>
             <div style={{ fontSize: '13px', lineHeight: 1.65, color: 'var(--text)' }}>{insight}</div>
+          </div>
+
+          {/* District points */}
+          <div style={{
+            background: 'var(--surf)', border: '0.5px solid var(--border)',
+            borderRadius: '10px', padding: '12px 14px'
+          }}>
+            <div style={{ fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '10px' }}>
+              Ciudad de Sumeria
+            </div>
+            {DISTRICT_ORDER.map((d, i) => {
+              const pts = districtPoints[d] || 0
+              const { stage, progress } = getStageAndProgress(d, pts)
+              const stageName = STAGE_NAMES[d]?.[stage]
+              const thresholds = STAGE_THRESHOLDS[d]
+              const nextGoal = stage < 5 ? thresholds[stage + 1] : thresholds[5]
+              return (
+                <div key={d} style={{
+                  padding: '7px 0',
+                  borderBottom: i < DISTRICT_ORDER.length - 1 ? '0.5px solid var(--border)' : 'none'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 500, color: COLORS[d] }}>{DISTRICT_LABELS[d]}</span>
+                    <span style={{ fontSize: '10px', color: 'var(--muted)' }}>{stageName}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ flex: 1, height: '3px', background: 'var(--surf3)', borderRadius: '2px', overflow: 'hidden' }}>
+                      <div style={{ width: `${progress * 100}%`, height: '100%', background: COLORS[d], borderRadius: '2px' }} />
+                    </div>
+                    <div style={{ fontSize: '10px', color: 'var(--muted2)', minWidth: '52px', textAlign: 'right' }}>
+                      {pts} / {nextGoal} pts
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </>
       )}
