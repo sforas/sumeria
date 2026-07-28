@@ -3,7 +3,8 @@ import { supabase } from '../lib/supabase'
 import { getWorkoutIcon } from '../components/icons/getWorkoutIcon'
 
 const WORKOUT_TYPES = ['Calisthenics', 'Fútbol', 'Pádel', 'Golf', 'Other']
-const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0] // Mon→Sun
+const DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
 
 function today() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
@@ -51,6 +52,7 @@ export default function Fitness() {
   const [routines, setRoutines] = useState([])
   const [prMap, setPrMap] = useState({})
   const [exerciseHistory, setExerciseHistory] = useState(null)
+  const [editingRoutine, setEditingRoutine] = useState(null)
   const photoInputRef = useRef(null)
 
   useEffect(() => { fetchData(); fetchPhotos(); fetchRoutines(); fetchPRs() }, [])
@@ -84,8 +86,77 @@ export default function Fitness() {
       routine_exercises: (exercisesData || []).filter(ex => ex.routine_id === routine.id)
     }))
 
+    routinesWithExercises.sort((a, b) => {
+      const dayA = parseInt(a.days_of_week) || 0
+      const dayB = parseInt(b.days_of_week) || 0
+      return DAY_ORDER.indexOf(dayA) - DAY_ORDER.indexOf(dayB)
+    })
+
     console.log('fetchRoutines result:', routinesWithExercises)
     setRoutines(routinesWithExercises)
+  }
+
+  function openRoutineEditor(routine) {
+    setEditingRoutine({
+      id: routine.id,
+      title: routine.title,
+      days_of_week: routine.days_of_week,
+      exercises: routine.routine_exercises.map(ex => ({
+        id: ex.id,
+        name: ex.name,
+        sets: ex.sets?.toString() || '',
+        reps: ex.reps || '',
+        order_index: ex.order_index,
+        isNew: false,
+        deleted: false
+      }))
+    })
+  }
+
+  async function saveRoutineEditor() {
+    if (!editingRoutine) return
+
+    // Update routine title
+    await supabase.from('routines')
+      .update({ title: editingRoutine.title })
+      .eq('id', editingRoutine.id)
+
+    // Handle exercises
+    const toDelete = editingRoutine.exercises.filter(ex => ex.deleted && !ex.isNew)
+    const toUpdate = editingRoutine.exercises.filter(ex => !ex.deleted && !ex.isNew)
+    const toInsert = editingRoutine.exercises.filter(ex => !ex.deleted && ex.isNew)
+
+    if (toDelete.length > 0) {
+      await supabase.from('routine_exercises')
+        .delete()
+        .in('id', toDelete.map(ex => ex.id))
+    }
+
+    for (const ex of toUpdate) {
+      await supabase.from('routine_exercises')
+        .update({
+          name: ex.name,
+          sets: ex.sets ? parseInt(ex.sets) : null,
+          reps: ex.reps || null,
+          order_index: ex.order_index
+        })
+        .eq('id', ex.id)
+    }
+
+    if (toInsert.length > 0) {
+      await supabase.from('routine_exercises').insert(
+        toInsert.map((ex, i) => ({
+          routine_id: editingRoutine.id,
+          name: ex.name,
+          sets: ex.sets ? parseInt(ex.sets) : null,
+          reps: ex.reps || null,
+          order_index: toUpdate.length + i + 1
+        }))
+      )
+    }
+
+    setEditingRoutine(null)
+    fetchRoutines()
   }
 
   async function fetchPRs() {
@@ -549,14 +620,31 @@ export default function Fitness() {
               padding: '14px', marginBottom: '10px',
               border: '0.5px solid var(--border)'
             }}>
-              <div style={{
-                fontFamily: 'Georgia, serif', fontSize: '15px',
-                color: 'var(--fit)', marginBottom: '4px', fontWeight: 500
-              }}>
-                {routine.title}
-              </div>
-              <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '10px' }}>
-                {routine.days_of_week?.split(',').map(Number).map(d => DAY_LABELS[d]).join(' · ')}
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '10px' }}>
+                <div>
+                  <div style={{
+                    fontSize: '10px', color: 'var(--muted)',
+                    textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '4px'
+                  }}>
+                    {DAY_NAMES[parseInt(routine.days_of_week)] || ''}
+                  </div>
+                  <div style={{
+                    fontFamily: 'Georgia, serif', fontSize: '15px',
+                    color: 'var(--fit)', fontWeight: 500
+                  }}>
+                    {routine.title}
+                  </div>
+                </div>
+                <button onClick={() => openRoutineEditor(routine)} style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: 'var(--muted)', padding: '4px'
+                }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" strokeWidth="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                </button>
               </div>
               {routine.routine_exercises
                 ?.sort((a, b) => a.order_index - b.order_index)
@@ -587,6 +675,152 @@ export default function Fitness() {
             </div>
           ))}
         </>
+      )}
+
+      {editingRoutine && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+          zIndex: 200, display: 'flex', alignItems: 'flex-end'
+        }}>
+          <div style={{
+            background: 'var(--surf)', borderRadius: '20px 20px 0 0',
+            padding: '20px 16px', width: '100%',
+            maxHeight: '85vh', overflowY: 'auto'
+          }}>
+            <div style={{
+              fontSize: '10px', color: 'var(--muted)',
+              textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '12px'
+            }}>
+              Editar rutina — {DAY_NAMES[parseInt(editingRoutine.days_of_week)]}
+            </div>
+
+            <input
+              value={editingRoutine.title}
+              onChange={e => setEditingRoutine(prev => ({ ...prev, title: e.target.value }))}
+              placeholder="Nombre de la rutina"
+              style={{
+                width: '100%', background: 'var(--surf3)',
+                border: '0.5px solid var(--border)', borderRadius: '8px',
+                color: 'var(--text)', fontSize: '15px', padding: '10px 12px',
+                outline: 'none', marginBottom: '16px', fontFamily: 'Georgia, serif'
+              }}
+            />
+
+            <div style={{
+              fontSize: '10px', color: 'var(--muted)',
+              textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '8px'
+            }}>
+              Ejercicios
+            </div>
+
+            {editingRoutine.exercises.filter(ex => !ex.deleted).map((ex, i) => (
+              <div key={ex.id || i} style={{
+                background: 'var(--surf2)', borderRadius: '8px',
+                padding: '10px', marginBottom: '8px'
+              }}>
+                <input
+                  value={ex.name}
+                  onChange={e => setEditingRoutine(prev => ({
+                    ...prev,
+                    exercises: prev.exercises.map(x =>
+                      x === ex ? { ...x, name: e.target.value } : x
+                    )
+                  }))}
+                  placeholder="Nombre del ejercicio"
+                  style={{
+                    width: '100%', background: 'var(--surf3)',
+                    border: '0.5px solid var(--border)', borderRadius: '6px',
+                    color: 'var(--text)', fontSize: '13px', padding: '8px 10px',
+                    outline: 'none', marginBottom: '6px'
+                  }}
+                />
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  <input
+                    value={ex.sets}
+                    onChange={e => setEditingRoutine(prev => ({
+                      ...prev,
+                      exercises: prev.exercises.map(x =>
+                        x === ex ? { ...x, sets: e.target.value } : x
+                      )
+                    }))}
+                    placeholder="Sets"
+                    type="number"
+                    inputMode="numeric"
+                    style={{
+                      width: '60px', background: 'var(--surf3)',
+                      border: '0.5px solid var(--border)', borderRadius: '6px',
+                      color: 'var(--text)', fontSize: '13px', padding: '8px',
+                      outline: 'none', textAlign: 'center'
+                    }}
+                  />
+                  <div style={{ fontSize: '12px', color: 'var(--muted)' }}>×</div>
+                  <input
+                    value={ex.reps}
+                    onChange={e => setEditingRoutine(prev => ({
+                      ...prev,
+                      exercises: prev.exercises.map(x =>
+                        x === ex ? { ...x, reps: e.target.value } : x
+                      )
+                    }))}
+                    placeholder="Reps / descripción"
+                    style={{
+                      flex: 1, background: 'var(--surf3)',
+                      border: '0.5px solid var(--border)', borderRadius: '6px',
+                      color: 'var(--text)', fontSize: '13px', padding: '8px',
+                      outline: 'none'
+                    }}
+                  />
+                  <button onClick={() => setEditingRoutine(prev => ({
+                    ...prev,
+                    exercises: prev.exercises.map(x =>
+                      x === ex ? { ...x, deleted: true } : x
+                    )
+                  }))} style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    color: 'var(--danger)', fontSize: '16px', padding: '4px'
+                  }}>
+                    ×
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            <button onClick={() => setEditingRoutine(prev => ({
+              ...prev,
+              exercises: [...prev.exercises, {
+                id: `new-${Date.now()}`,
+                name: '', sets: '', reps: '',
+                order_index: prev.exercises.length + 1,
+                isNew: true, deleted: false
+              }]
+            }))} style={{
+              width: '100%', background: 'none',
+              border: '0.5px dashed var(--border)',
+              borderRadius: '8px', color: 'var(--muted)',
+              fontSize: '13px', padding: '10px',
+              cursor: 'pointer', marginBottom: '16px'
+            }}>
+              + Agregar ejercicio
+            </button>
+
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button onClick={saveRoutineEditor} style={{
+                flex: 1, background: 'var(--fit)', border: 'none',
+                borderRadius: '10px', color: '#000', fontSize: '14px',
+                padding: '14px', cursor: 'pointer', fontWeight: 600
+              }}>
+                Guardar
+              </button>
+              <button onClick={() => setEditingRoutine(null)} style={{
+                background: 'var(--surf3)', border: '0.5px solid var(--border)',
+                borderRadius: '10px', color: 'var(--muted)',
+                fontSize: '13px', padding: '14px 16px', cursor: 'pointer'
+              }}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {exerciseHistory && (
