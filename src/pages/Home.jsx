@@ -492,11 +492,6 @@ export default function Home() {
       await supabase.from('xp_log').insert({ amount: Math.round((data.duration_min || 30) / 10) * 10, reason: 'Study session', date: today() })
     }
 
-    if (type === 'pr') {
-      if (data.max_pushups) await supabase.from('personal_records').insert({ exercise: 'Push-ups', reps: parseInt(data.max_pushups), date: today() })
-      if (data.max_pullups) await supabase.from('personal_records').insert({ exercise: 'Pull-ups', reps: parseInt(data.max_pullups), date: today() })
-    }
-
     if (type === 'weigh' && data.kg) {
       await supabase.from('weight_log').insert({ kg: parseFloat(data.kg), date: today() })
     }
@@ -1117,29 +1112,6 @@ export default function Home() {
                     style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '16px', padding: '12px', outline: 'none', marginBottom: '12px', textAlign: 'center' }} />
                   <button onClick={() => completeRoutine(routine, quickLog)} style={{ width: '100%', background: 'var(--fit)', border: 'none', borderRadius: '8px', color: '#000', fontSize: '14px', padding: '13px', cursor: 'pointer', fontWeight: 600 }}>
                     Save weigh-in
-                  </button>
-                </>
-              )}
-
-              {/* PR */}
-              {type === 'pr' && (
-                <>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
-                    <div>
-                      <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '6px', textAlign: 'center' }}>Max push-ups</div>
-                      <input type="number" inputMode="numeric" placeholder="e.g. 25" value={quickLog.max_pushups || ''}
-                        onChange={e => setQuickLog(p => ({ ...p, max_pushups: e.target.value }))}
-                        style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '20px', padding: '12px', outline: 'none', textAlign: 'center' }} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '6px', textAlign: 'center' }}>Max pull-ups</div>
-                      <input type="number" inputMode="numeric" placeholder="e.g. 10" value={quickLog.max_pullups || ''}
-                        onChange={e => setQuickLog(p => ({ ...p, max_pullups: e.target.value }))}
-                        style={{ width: '100%', background: 'var(--surf3)', border: '0.5px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '20px', padding: '12px', outline: 'none', textAlign: 'center' }} />
-                    </div>
-                  </div>
-                  <button onClick={() => completeRoutine(routine, quickLog)} style={{ width: '100%', background: 'var(--fit)', border: 'none', borderRadius: '8px', color: '#000', fontSize: '14px', padding: '13px', cursor: 'pointer', fontWeight: 600 }}>
-                    Save PRs
                   </button>
                 </>
               )}
