@@ -1358,7 +1358,7 @@ export default function Home() {
                   {selectedDistrict.charAt(0).toUpperCase() + selectedDistrict.slice(1)}
                 </div>
                 <div style={{ fontSize: '12px', color: 'var(--muted)' }}>
-                  {stageName}
+                  Etapa {stage} — {stageName}
                 </div>
               </div>
               <div style={{ fontSize: '11px', color: 'var(--muted2)', textAlign: 'right' }}>
