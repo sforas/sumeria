@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { getWorkoutIcon } from '../components/icons/getWorkoutIcon'
 
 const WORKOUT_TYPES = ['Calisthenics', 'Fútbol', 'Pádel', 'Golf', 'Other']
+const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 function today() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
@@ -30,25 +31,6 @@ function WorkoutForm({ data, setData, onSave, onCancel, title }) {
   )
 }
 
-function PRChart({ data, color, label }) {
-  if (!data.length) return null
-  const max = Math.max(...data.map(d => d.reps))
-  return (
-    <div style={{ marginBottom: '16px' }}>
-      <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '8px' }}>{label}</div>
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height: '60px' }}>
-        {data.map((d, i) => (
-          <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
-            <div style={{ fontSize: '9px', color: color }}>{d.reps}</div>
-            <div style={{ width: '100%', background: color, borderRadius: '3px 3px 0 0', height: `${(d.reps / max) * 44}px`, opacity: i === data.length - 1 ? 1 : 0.5, transition: 'height .3s' }} />
-            <div style={{ fontSize: '8px', color: 'var(--muted)' }}>{d.date?.slice(5)}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 export default function Fitness() {
   const [view, setView] = useState('day')
   const [workouts, setWorkouts] = useState([])
@@ -66,31 +48,34 @@ export default function Fitness() {
   const [editWeight, setEditWeight] = useState(null)
   const [newWorkout, setNewWorkout] = useState({ type: 'Calisthenics', duration_min: '', notes: '' })
   const [newWeight, setNewWeight] = useState('')
-  const [prs, setPrs] = useState([])
-  const [todayRoutines, setTodayRoutines] = useState([])
-  const [completedSets, setCompletedSets] = useState({})
+  const [routines, setRoutines] = useState([])
+  const [prMap, setPrMap] = useState({})
   const [exerciseHistory, setExerciseHistory] = useState(null)
   const photoInputRef = useRef(null)
 
-  useEffect(() => { fetchData(); fetchPhotos(); fetchTodayRoutines() }, [])
+  useEffect(() => { fetchData(); fetchPhotos(); fetchRoutines(); fetchPRs() }, [])
 
-  async function fetchTodayRoutines() {
-    const dayOfWeek = new Date().getDay()
+  async function fetchRoutines() {
     const { data } = await supabase.from('routines')
       .select('*, routine_exercises(*)')
+      .eq('area', 'fitness')
       .eq('active', true)
-      .eq('quick_log_type', 'workout')
-      .order('order_index', { foreignTable: 'routine_exercises' })
-    const todays = (data || []).filter(r => r.days_of_week.split(',').map(Number).includes(dayOfWeek))
-    setTodayRoutines(todays)
+      .order('title')
+    setRoutines(data || [])
   }
 
-  function toggleSet(exId, setIndex) {
-    setCompletedSets(prev => {
-      const current = prev[exId] || 0
-      const newVal = setIndex < current ? setIndex : setIndex + 1
-      return { ...prev, [exId]: newVal }
+  async function fetchPRs() {
+    const { data } = await supabase
+      .from('workout_sets')
+      .select('exercise_name, reps')
+      .not('reps', 'is', null)
+    const map = {}
+    ;(data || []).forEach(row => {
+      if (!map[row.exercise_name] || row.reps > map[row.exercise_name]) {
+        map[row.exercise_name] = row.reps
+      }
     })
+    setPrMap(map)
   }
 
   async function fetchExerciseHistory(exerciseName) {
@@ -104,14 +89,12 @@ export default function Fitness() {
   }
 
   async function fetchData() {
-    const [{ data: w }, { data: wl }, { data: p }] = await Promise.all([
+    const [{ data: w }, { data: wl }] = await Promise.all([
       supabase.from('workouts').select('*').order('created_at', { ascending: false }).limit(20),
-      supabase.from('weight_log').select('*').order('date', { ascending: false }).limit(10),
-      supabase.from('personal_records').select('*').order('date', { ascending: false }).limit(20)
+      supabase.from('weight_log').select('*').order('date', { ascending: false }).limit(10)
     ])
     setWorkouts(w || [])
     setWeightLog(wl || [])
-    setPrs(p || [])
     setLoading(false)
   }
 
@@ -224,14 +207,7 @@ export default function Fitness() {
   const prevWeight = weightLog[1]?.kg
   const weightDiff = latestWeight && prevWeight ? (latestWeight - prevWeight).toFixed(1) : null
 
-  const maxPushups = prs.filter(p => p.exercise === 'Push-ups').sort((a, b) => b.reps - a.reps)[0]
-  const maxPullups = prs.filter(p => p.exercise === 'Pull-ups').sort((a, b) => b.reps - a.reps)[0]
-
-  const pushupHistory = prs.filter(p => p.exercise === 'Push-ups').slice(0, 8).reverse()
-  const pullupHistory = prs.filter(p => p.exercise === 'Pull-ups').slice(0, 8).reverse()
-
-  const todayExercises = todayRoutines.flatMap(r => r.routine_exercises || [])
-  const allSetsComplete = todayExercises.length > 0 && todayExercises.every(ex => (completedSets[ex.id] || 0) >= ex.sets)
+  const sortedPRs = Object.entries(prMap).sort(([a], [b]) => a.localeCompare(b))
 
   const views = ['day', 'week', 'month', 'ytd', 'routine']
 
@@ -426,30 +402,31 @@ export default function Fitness() {
             ))}
           </div>
 
-          {/* PR section */}
-          {(maxPushups || maxPullups) && (
-            <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '13px 14px', marginBottom: '12px' }}>
-              <div style={{ fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '12px' }}>Personal Records</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
-                {maxPushups && (
-                  <div style={{ textAlign: 'center', background: '#061410', borderRadius: '8px', padding: '12px' }}>
-                    <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--fit)' }}>{maxPushups.reps}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>Max push-ups</div>
-                    <div style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '1px' }}>{maxPushups.date}</div>
-                  </div>
-                )}
-                {maxPullups && (
-                  <div style={{ textAlign: 'center', background: '#061410', borderRadius: '8px', padding: '12px' }}>
-                    <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--fit)' }}>{maxPullups.reps}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>Max pull-ups</div>
-                    <div style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '1px' }}>{maxPullups.date}</div>
-                  </div>
-                )}
-              </div>
-              <PRChart data={pushupHistory} color="var(--fit)" label="Push-ups progress" />
-              <PRChart data={pullupHistory} color="#4A9EE8" label="Pull-ups progress" />
+          {/* Automatic PRs */}
+          <div style={{ marginBottom: '20px' }}>
+            <div style={{ fontSize: '9px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '4px' }}>
+              Records personales
             </div>
-          )}
+            <div style={{ fontSize: '10px', color: 'var(--muted2)', marginBottom: '10px' }}>
+              Calculado automáticamente de tus workouts
+            </div>
+            {sortedPRs.map(([name, pr]) => (
+              <div key={name} style={{
+                display: 'flex', justifyContent: 'space-between',
+                padding: '8px 0', borderBottom: '0.5px solid var(--border)'
+              }}>
+                <div style={{ fontSize: '13px', color: 'var(--text)' }}>{name}</div>
+                <div style={{ fontSize: '13px', color: 'var(--fit)', fontWeight: 600 }}>
+                  {pr} reps
+                </div>
+              </div>
+            ))}
+            {sortedPRs.length === 0 && (
+              <div style={{ fontSize: '13px', color: 'var(--muted)', textAlign: 'center', padding: '16px 0' }}>
+                Completa un workout para ver tus records.
+              </div>
+            )}
+          </div>
 
           <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '8px' }}>Weight log</div>
           {weightLog.slice(0, 5).map(w => (
@@ -531,84 +508,60 @@ export default function Fitness() {
               </div>
             ))}
           </div>
-          {(maxPushups || maxPullups) && (
-            <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '13px 14px' }}>
-              <div style={{ fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '12px' }}>All-time PRs</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                {maxPushups && (
-                  <div style={{ textAlign: 'center', background: '#061410', borderRadius: '8px', padding: '12px' }}>
-                    <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--fit)' }}>{maxPushups.reps}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>Max push-ups</div>
-                  </div>
-                )}
-                {maxPullups && (
-                  <div style={{ textAlign: 'center', background: '#061410', borderRadius: '8px', padding: '12px' }}>
-                    <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--fit)' }}>{maxPullups.reps}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>Max pull-ups</div>
-                  </div>
-                )}
-              </div>
-              <div style={{ marginTop: '16px' }}>
-                <PRChart data={pushupHistory} color="var(--fit)" label="Push-ups all time" />
-                <PRChart data={pullupHistory} color="#4A9EE8" label="Pull-ups all time" />
-              </div>
-            </div>
-          )}
         </>
       )}
 
       {/* ROUTINE VIEW */}
       {view === 'routine' && (
         <>
-          {todayRoutines.length === 0 && (
+          {routines.length === 0 && (
             <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '16px', textAlign: 'center', color: 'var(--muted)', fontSize: '13px' }}>
-              No workout routine scheduled today
+              No fitness routines yet
             </div>
           )}
-          {todayRoutines.map(routine => (
-            <div key={routine.id} style={{ marginBottom: '20px' }}>
-              <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--fit)', marginBottom: '10px' }}>{routine.title}</div>
-              {(routine.routine_exercises || []).map(ex => {
-                const done = completedSets[ex.id] || 0
-                return (
-                  <div key={ex.id} style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '12px 13px', marginBottom: '8px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                      <div
-                        onClick={() => fetchExerciseHistory(ex.name)}
-                        style={{
-                          fontSize: '14px', fontWeight: 500, color: 'var(--text)',
-                          cursor: 'pointer', textDecoration: 'underline',
-                          textDecorationColor: 'var(--border)',
-                          textDecorationStyle: 'dotted'
-                        }}
-                      >
-                        {ex.name}
-                      </div>
-                      <div style={{ fontSize: '12px', color: 'var(--fit)', fontWeight: 700 }}>{ex.sets} × {ex.reps}</div>
+          {routines.map(routine => (
+            <div key={routine.id} style={{
+              background: 'var(--surf)', borderRadius: '12px',
+              padding: '14px', marginBottom: '10px',
+              border: '0.5px solid var(--border)'
+            }}>
+              <div style={{
+                fontFamily: 'Georgia, serif', fontSize: '15px',
+                color: 'var(--fit)', marginBottom: '4px', fontWeight: 500
+              }}>
+                {routine.title}
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '10px' }}>
+                {routine.days_of_week?.split(',').map(Number).map(d => DAY_LABELS[d]).join(' · ')}
+              </div>
+              {routine.routine_exercises
+                ?.sort((a, b) => a.order_index - b.order_index)
+                .map(ex => (
+                  <div key={ex.id} style={{
+                    display: 'flex', justifyContent: 'space-between',
+                    alignItems: 'center', padding: '6px 0',
+                    borderBottom: '0.5px solid var(--border)'
+                  }}>
+                    <div
+                      onClick={() => fetchExerciseHistory(ex.name)}
+                      style={{
+                        fontSize: '13px', color: 'var(--text)',
+                        cursor: 'pointer',
+                        textDecoration: 'underline',
+                        textDecorationColor: 'var(--border)',
+                        textDecorationStyle: 'dotted'
+                      }}
+                    >
+                      {ex.name}
                     </div>
-                    <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
-                      {Array.from({ length: ex.sets }).map((_, setIndex) => (
-                        <div key={setIndex} onClick={() => toggleSet(ex.id, setIndex)} style={{
-                          width: '18px', height: '18px', borderRadius: '50%',
-                          border: '1.5px solid var(--border)',
-                          background: setIndex < done ? 'var(--fit)' : 'none',
-                          cursor: 'pointer'
-                        }} />
-                      ))}
-                    </div>
-                    <div style={{ height: '3px', background: 'var(--surf3)', borderRadius: '2px', overflow: 'hidden' }}>
-                      <div style={{ width: `${(done / ex.sets) * 100}%`, height: '100%', background: 'var(--fit)', borderRadius: '2px', transition: 'width .2s' }} />
+                    <div style={{ fontSize: '11px', color: 'var(--muted2)' }}>
+                      {ex.sets} × {ex.reps}
                     </div>
                   </div>
-                )
-              })}
+                ))
+              }
             </div>
           ))}
-          {allSetsComplete && (
-            <div style={{ textAlign: 'center', color: 'var(--fit)', fontSize: '13px', fontWeight: 500, padding: '16px 0' }}>
-              All sets complete. Great work.
-            </div>
-          )}
         </>
       )}
 
