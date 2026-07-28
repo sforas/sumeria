@@ -11,7 +11,7 @@ const DISTRICT_SYMBOLS = {
   social: SocialSymbol, health: HealthSymbol, savings: SavingsSymbol, journal: JournalSymbol
 }
 
-const BUILDING_X = [10, 50, 90, 130, 170, 210, 250, 290]
+const SECTION_WIDTH = 320 / 8 // 40px per section
 
 function sunMoonPosition() {
   const now = new Date()
@@ -70,10 +70,12 @@ export default function Skyline({ points = {}, onBuildingClick }) {
         const { width, height } = getBuildingSize(stage, progress)
         const color = COLORS[district]
         const content = getBuildingRender(district, stage, width, height, color)
+        const sectionCenter = SECTION_WIDTH * i + SECTION_WIDTH / 2
+        const buildingLeft = sectionCenter - width / 2
         return (
           <g
             key={district}
-            transform={`translate(${BUILDING_X[i] - width / 2}, ${GROUND_Y - height})`}
+            transform={`translate(${buildingLeft}, ${GROUND_Y - height})`}
             fill="none" stroke={color} strokeWidth="1.3"
             onClick={onBuildingClick ? () => onBuildingClick(district) : undefined}
             style={onBuildingClick ? { cursor: 'pointer' } : undefined}
@@ -87,7 +89,7 @@ export default function Skyline({ points = {}, onBuildingClick }) {
       {DISTRICT_ORDER.map((district, i) => {
         const Symbol = DISTRICT_SYMBOLS[district]
         return (
-          <g key={`label-${district}`} transform={`translate(${BUILDING_X[i] - 5}, 131)`} style={{ color: COLORS[district] }}>
+          <g key={`label-${district}`} transform={`translate(${SECTION_WIDTH * i + SECTION_WIDTH / 2 - 5}, 131)`} style={{ color: COLORS[district] }}>
             <Symbol size={10} />
           </g>
         )

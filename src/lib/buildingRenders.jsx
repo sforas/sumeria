@@ -82,20 +82,20 @@ const FITNESS_STAGES = [
   ),
   (w, h, color) => (
     <>
-      <line x1={4} y1={0} x2={4} y2={h} />
-      <line x1={w - 4} y1={0} x2={w - 4} y2={h} />
-      <line x1={1} y1={2} x2={w - 1} y2={2} strokeWidth={2} />
-      <rect x={1} y={0} width={6} height={3} fill={color} opacity={0.4} stroke="none" />
-      <rect x={w - 7} y={0} width={6} height={3} fill={color} opacity={0.4} stroke="none" />
-      <line x1={8} y1={h * 0.45} x2={8} y2={h} />
-      <line x1={18} y1={h * 0.45} x2={18} y2={h} />
-      <line x1={6} y1={h * 0.45} x2={20} y2={h * 0.45} strokeWidth={1.8} />
-      <line x1={w - 18} y1={h * 0.45} x2={w - 18} y2={h} />
-      <line x1={w - 8} y1={h * 0.45} x2={w - 8} y2={h} />
-      <line x1={w - 20} y1={h * 0.45} x2={w - 6} y2={h * 0.45} strokeWidth={1.8} />
-      <rect x={1} y={h - 4} width={6} height={4} />
-      <rect x={w - 7} y={h - 4} width={6} height={4} />
-      <line x1={0} y1={h} x2={w} y2={h} />
+      <line x1={w * 0.12} y1={h * 0.02} x2={w * 0.12} y2={h} strokeWidth={2} />
+      <line x1={w * 0.88} y1={h * 0.02} x2={w * 0.88} y2={h} strokeWidth={2} />
+      <line x1={w * 0.04} y1={h * 0.06} x2={w * 0.96} y2={h * 0.06} strokeWidth={2.5} />
+      <rect x={w * 0.06} y={0} width={w * 0.14} height={h * 0.08} fill={color} stroke="none" />
+      <rect x={w * 0.8} y={0} width={w * 0.14} height={h * 0.08} fill={color} stroke="none" />
+      <line x1={w * 0.22} y1={h * 0.44} x2={w * 0.22} y2={h} strokeWidth={1.5} />
+      <line x1={w * 0.44} y1={h * 0.44} x2={w * 0.44} y2={h} strokeWidth={1.5} />
+      <line x1={w * 0.18} y1={h * 0.44} x2={w * 0.48} y2={h * 0.44} strokeWidth={2} />
+      <line x1={w * 0.56} y1={h * 0.44} x2={w * 0.56} y2={h} strokeWidth={1.5} />
+      <line x1={w * 0.78} y1={h * 0.44} x2={w * 0.78} y2={h} strokeWidth={1.5} />
+      <line x1={w * 0.52} y1={h * 0.44} x2={w * 0.82} y2={h * 0.44} strokeWidth={2} />
+      <rect x={w * 0.04} y={h * 0.88} width={w * 0.16} height={h * 0.12} strokeWidth={1.1} />
+      <rect x={w * 0.8} y={h * 0.88} width={w * 0.16} height={h * 0.12} strokeWidth={1.1} />
+      <line x1={0} y1={h} x2={w} y2={h} strokeWidth={1.3} />
     </>
   ),
   (w, h) => (
@@ -142,15 +142,18 @@ const WORK_STAGES = [
   (w, h) => <>{foundationStage(w, h)}</>,
   (w, h) => (
     <>
-      <path d={`M ${w * 0.1} ${h * 0.3} L ${w * 0.9} ${h * 0.3} L ${w * 0.8} 0 L ${w * 0.2} 0 Z`} />
-      {[0.35, 0.5, 0.65].map((p, i) => (
-        <line key={`aws${i}`} x1={w * p} y1={h * 0.05} x2={w * p} y2={h * 0.28} strokeWidth={0.5} opacity={0.7} />
-      ))}
-      <line x1={w * 0.1} y1={h * 0.3} x2={w * 0.1} y2={h} />
-      <line x1={w * 0.9} y1={h * 0.3} x2={w * 0.9} y2={h} />
-      <line x1={2} y1={h * 0.6} x2={w - 2} y2={h * 0.6} strokeWidth={1.5} />
-      <rect x={2} y={h * 0.6} width={w - 4} height={h * 0.2} />
-      <line x1={0} y1={h} x2={w} y2={h} />
+      <line x1={w * 0.2} y1={0} x2={w * 0.2} y2={h} strokeWidth={2} />
+      <line x1={w * 0.2} y1={h * 0.12} x2={w * 0.85} y2={h * 0.12} strokeWidth={1.6} />
+      <path d={`M ${w * 0.2} ${h * 0.12} Q ${w * 0.28} ${h * 0.26} ${w * 0.38} ${h * 0.26}`} strokeWidth={1} opacity={0.6} fill="none" />
+      <line x1={w * 0.42} y1={h * 0.12} x2={w * 0.4} y2={h * 0.3} strokeWidth={0.9} opacity={0.7} />
+      <line x1={w * 0.8} y1={h * 0.12} x2={w * 0.82} y2={h * 0.3} strokeWidth={0.9} opacity={0.7} />
+      <rect x={w * 0.36} y={h * 0.3} width={w * 0.5} height={h * 0.32} strokeWidth={1.5} />
+      <line x1={w * 0.42} y1={h * 0.4} x2={w * 0.8} y2={h * 0.4} strokeWidth={1.1} opacity={0.7} />
+      <line x1={w * 0.42} y1={h * 0.47} x2={w * 0.76} y2={h * 0.47} strokeWidth={1.1} opacity={0.7} />
+      <line x1={w * 0.42} y1={h * 0.54} x2={w * 0.72} y2={h * 0.54} strokeWidth={1.1} opacity={0.7} />
+      <rect x={w * 0.1} y={h * 0.88} width={w * 0.2} height={h * 0.08} strokeWidth={1.2} />
+      <rect x={w * 0.05} y={h * 0.92} width={w * 0.3} height={h * 0.08} strokeWidth={1.1} />
+      <line x1={0} y1={h} x2={w} y2={h} strokeWidth={1.2} />
     </>
   ),
   (w, h, color) => (
@@ -216,16 +219,25 @@ const READING_STAGES = [
   (w, h) => <>{foundationStage(w, h)}</>,
   (w, h) => (
     <>
-      <path d={`M ${w * 0.15} ${h} L ${w * 0.1} 0 L ${w * 0.9} 0 L ${w * 0.85} ${h} Z`} />
-      {[0.2, 0.35, 0.5, 0.65, 0.8].map((p, i) => (
-        <g key={`ri${i}`}>
-          <line x1={w * 0.2} y1={h * p} x2={w * 0.8} y2={h * p} strokeWidth={0.6} />
-          {[0.28, 0.42, 0.56, 0.7].map((tp, ti) => (
-            <line key={`rt${i}-${ti}`} x1={w * tp} y1={h * p - 1.5} x2={w * tp} y2={h * p + 1.5} strokeWidth={0.5} />
-          ))}
+      <path d={`M ${w * 0.04} ${h} L ${w * 0.04} ${h * 0.18} Q ${w * 0.04} ${h * 0.04} ${w * 0.16} ${h * 0.04} L ${w * 0.42} ${h * 0.04} Q ${w * 0.46} ${h * 0.04} ${w * 0.46} ${h * 0.18} L ${w * 0.46} ${h} Z`} fill="none" strokeWidth={1.4} />
+      <path d={`M ${w * 0.54} ${h} L ${w * 0.54} ${h * 0.18} Q ${w * 0.54} ${h * 0.04} ${w * 0.66} ${h * 0.04} L ${w * 0.9} ${h * 0.04} Q ${w * 0.96} ${h * 0.04} ${w * 0.96} ${h * 0.18} L ${w * 0.96} ${h} Z`} fill="none" strokeWidth={1.4} />
+      {[0.22, 0.34, 0.46, 0.58, 0.7, 0.82].map((p, i) => (
+        <g key={`rl${i}`}>
+          <line x1={w * 0.1} y1={h * p} x2={w * 0.4} y2={h * p} strokeWidth={0.9} />
+          <line x1={w * 0.12} y1={h * p - 2} x2={w * 0.14} y2={h * p + 2} strokeWidth={0.6} />
+          <line x1={w * 0.2} y1={h * p - 2} x2={w * 0.22} y2={h * p + 2} strokeWidth={0.6} />
+          <line x1={w * 0.3} y1={h * p - 2} x2={w * 0.32} y2={h * p + 2} strokeWidth={0.6} />
         </g>
       ))}
-      <rect x={0} y={h - 5} width={w} height={5} />
+      {[0.22, 0.34, 0.46, 0.58, 0.7, 0.82].map((p, i) => (
+        <g key={`rr${i}`}>
+          <line x1={w * 0.6} y1={h * p} x2={w * 0.9} y2={h * p} strokeWidth={0.9} />
+          <line x1={w * 0.62} y1={h * p - 2} x2={w * 0.64} y2={h * p + 2} strokeWidth={0.6} />
+          <line x1={w * 0.72} y1={h * p - 2} x2={w * 0.74} y2={h * p + 2} strokeWidth={0.6} />
+          <line x1={w * 0.82} y1={h * p - 2} x2={w * 0.84} y2={h * p + 2} strokeWidth={0.6} />
+        </g>
+      ))}
+      <line x1={0} y1={h} x2={w} y2={h} strokeWidth={1.2} />
     </>
   ),
   (w, h) => (
