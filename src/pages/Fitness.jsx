@@ -56,12 +56,36 @@ export default function Fitness() {
   useEffect(() => { fetchData(); fetchPhotos(); fetchRoutines(); fetchPRs() }, [])
 
   async function fetchRoutines() {
-    const { data } = await supabase.from('routines')
-      .select('*, routine_exercises(*)')
+    const { data: routinesData, error: routinesError } = await supabase
+      .from('routines')
+      .select('*')
       .eq('area', 'fitness')
       .eq('active', true)
+      .eq('quick_log_type', 'workout')
       .order('title')
-    setRoutines(data || [])
+
+    if (routinesError || !routinesData) {
+      console.log('routines error:', routinesError)
+      setRoutines([])
+      return
+    }
+
+    // Fetch exercises for all routines manually
+    const routineIds = routinesData.map(r => r.id)
+    const { data: exercisesData } = await supabase
+      .from('routine_exercises')
+      .select('*')
+      .in('routine_id', routineIds)
+      .order('order_index')
+
+    // Attach exercises to each routine
+    const routinesWithExercises = routinesData.map(routine => ({
+      ...routine,
+      routine_exercises: (exercisesData || []).filter(ex => ex.routine_id === routine.id)
+    }))
+
+    console.log('fetchRoutines result:', routinesWithExercises)
+    setRoutines(routinesWithExercises)
   }
 
   async function fetchPRs() {
