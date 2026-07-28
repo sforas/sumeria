@@ -309,26 +309,29 @@ export default function Social() {
 
           {filteredContacts.map(contact => (
             <div key={contact.id} onClick={() => setDetailContact(contact)} style={{
-              background: 'var(--surf)', border: '0.5px solid var(--border)', borderLeft: '2px solid var(--social)',
+              background: 'var(--surf)', border: '0.5px solid var(--border)', borderLeft: '2px solid #B5724A',
               borderRadius: '0 8px 8px 0', padding: '12px 13px', marginBottom: '8px', cursor: 'pointer'
             }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '6px' }}>
-                <div style={{ fontSize: '14px', fontWeight: 700 }}>{contact.name}</div>
+                <div style={{ fontSize: '16px', fontWeight: 600 }}>{contact.name}</div>
                 <div style={{ display: 'flex', gap: '10px', flexShrink: 0 }}>
                   <div onClick={e => { e.stopPropagation(); openEditContact(contact) }} style={{ fontSize: '10px', color: 'var(--muted)', cursor: 'pointer' }}>Edit</div>
                   <div onClick={e => { e.stopPropagation(); deleteContact(contact.id) }} style={{ fontSize: '14px', color: 'var(--muted)', cursor: 'pointer' }}>×</div>
                 </div>
               </div>
               <span style={{
-                display: 'inline-block', background: 'color-mix(in srgb, var(--social) 20%, transparent)',
-                color: 'var(--social)', fontSize: '10px', padding: '2px 8px', borderRadius: '10px', marginBottom: '4px'
+                display: 'inline-block', background: 'rgba(181, 114, 74, 0.15)',
+                color: '#B5724A', border: '0.5px solid rgba(181, 114, 74, 0.3)',
+                borderRadius: '6px', padding: '2px 8px', fontSize: '11px'
               }}>{contact.relationship}</span>
-              {frequencyLabel(contact.contact_frequency) && (
-                <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px' }}>{frequencyLabel(contact.contact_frequency)}</div>
-              )}
-              {contact.birthday && (
-                <div style={{ fontSize: '11px', color: 'var(--muted)' }}>{formatBirthday(contact.birthday)}</div>
-              )}
+              <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '8px' }}>
+                {frequencyLabel(contact.contact_frequency) && (
+                  <div>{frequencyLabel(contact.contact_frequency)}</div>
+                )}
+                {contact.birthday && (
+                  <div style={{ marginTop: '2px' }}>{formatBirthday(contact.birthday)}</div>
+                )}
+              </div>
               {contact.notes && (
                 <div style={{ fontSize: '11px', color: 'var(--muted2)', fontStyle: 'italic', marginTop: '4px' }}>
                   {contact.notes.slice(0, 60)}{contact.notes.length > 60 ? '…' : ''}
@@ -352,7 +355,7 @@ export default function Social() {
             </div>
           )}
           {upcomingReminders.map(r => (
-            <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: 'var(--surf)', border: '0.5px solid var(--border)', borderLeft: '2px solid var(--social)', borderRadius: '0 8px 8px 0', marginBottom: '6px' }}>
+            <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: 'var(--surf)', border: '0.5px solid var(--border)', borderLeft: '2px solid #B5724A', borderRadius: '0 8px 8px 0', marginBottom: '6px' }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: '13px', fontWeight: 500 }}>{r.title}</div>
                 <div style={{ fontSize: '11px', color: 'var(--muted2)' }}>{r.contacts?.name}</div>
@@ -379,7 +382,7 @@ export default function Social() {
             <>
               <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '8px' }}>Past / Done</div>
               {pastReminders.map(r => (
-                <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: 'var(--surf)', border: '0.5px solid var(--border)', borderLeft: '2px solid var(--social)', borderRadius: '0 8px 8px 0', marginBottom: '6px', opacity: 0.5 }}>
+                <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: 'var(--surf)', border: '0.5px solid var(--border)', borderLeft: '2px solid #B5724A', borderRadius: '0 8px 8px 0', marginBottom: '6px', opacity: 0.5 }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: '13px', fontWeight: 500, textDecoration: r.done ? 'line-through' : 'none' }}>{r.title}</div>
                     <div style={{ fontSize: '11px', color: 'var(--muted2)' }}>{r.contacts?.name}</div>

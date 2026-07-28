@@ -275,7 +275,7 @@ async function requestNotifs() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '14px' }}>
             <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '11px 13px' }}>
               <div style={{ fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '4px' }}>Medicines today</div>
-              <div style={{ fontSize: '20px', fontWeight: 500, color: takenCount === todayMeds.length && todayMeds.length > 0 ? 'var(--fit)' : 'var(--health)' }}>{takenCount}/{todayMeds.length}</div>
+              <div style={{ fontSize: '36px', fontWeight: 700, color: takenCount === todayMeds.length && todayMeds.length > 0 ? 'var(--fit)' : '#7A9E7E' }}>{takenCount}/{todayMeds.length}</div>
               <div style={{ height: '3px', background: 'var(--surf3)', borderRadius: '2px', marginTop: '6px', overflow: 'hidden' }}>
                 <div style={{ width: `${todayMeds.length > 0 ? takenCount / todayMeds.length * 100 : 0}%`, height: '100%', background: 'var(--health)', borderRadius: '2px' }} />
               </div>
@@ -305,19 +305,19 @@ async function requestNotifs() {
               {editMed?.id === med.id ? (
                 <MedForm data={editMed} setData={setEditMed} onSave={saveMedicine} onCancel={() => setEditMed(null)} title="Edit medicine" />
               ) : (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '8px', marginBottom: '6px', opacity: medLog[med.id] ? 0.6 : 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: 'var(--surf)', border: '0.5px solid var(--border)', borderLeft: '2px solid #7A9E7E', borderRadius: '0 8px 8px 0', marginBottom: '6px', opacity: medLog[med.id] ? 0.6 : 1 }}>
                   <div style={{ width: '32px', height: '32px', borderRadius: '7px', background: '#160610', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'var(--health)' }}>
                     <HealthSymbol size={18} />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '1px' }}>
+                    <div style={{ fontSize: '15px', fontWeight: 600, marginBottom: '1px' }}>
                       {med.name}
                       {med.frequency === 'alternate' && <span style={{ fontSize: '10px', color: 'var(--acc)', marginLeft: '6px' }}>every other day</span>}
                     </div>
-                    <div style={{ fontSize: '11px', color: 'var(--muted2)' }}>{med.dose} · {med.time}{med.with_food ? ' · with food' : ''}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--muted)' }}>{med.dose} · {med.time}{med.with_food ? ' · with food' : ''}</div>
                   </div>
                   <button onClick={() => setEditMed({ ...med })} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '10px', padding: '4px' }}>Edit</button>
-                  <div onClick={() => toggleMed(med)} style={{ width: '28px', height: '28px', borderRadius: '6px', border: medLog[med.id] ? 'none' : '1.5px solid var(--border)', background: medLog[med.id] ? 'var(--health)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '12px', color: '#fff', flexShrink: 0 }}>
+                  <div onClick={() => toggleMed(med)} style={{ width: '28px', height: '28px', borderRadius: '50%', border: medLog[med.id] ? 'none' : '1.5px solid #7A9E7E', background: medLog[med.id] ? '#7A9E7E' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '14px', color: '#fff', flexShrink: 0 }}>
                     {medLog[med.id] ? '✓' : ''}
                   </div>
                   <button onClick={() => deleteMedicine(med.id)} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '16px', padding: '0' }}>×</button>

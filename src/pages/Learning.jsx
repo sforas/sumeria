@@ -27,24 +27,24 @@ function CourseForm({ data, setData, onSave, onCancel, title }) {
 function CourseCard({ course, editCourse, setEditCourse, onSaveEdit, onDelete, onUpdateStatus, onStartSession }) {
   const pct = course.total_modules > 0 ? Math.round((course.modules_done || 0) / course.total_modules * 100) : 0
   return (
-    <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '12px 13px', marginBottom: '8px' }}>
+    <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderLeft: '2px solid #6B8E6B', borderRadius: '0 10px 10px 0', padding: '12px 13px', marginBottom: '8px' }}>
       {editCourse?.id === course.id ? (
         <CourseForm data={editCourse} setData={setEditCourse} onSave={onSaveEdit} onCancel={() => setEditCourse(null)} title="Edit course" />
       ) : (
         <>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '6px' }}>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '1px' }}>{course.title}</div>
-              <div style={{ fontSize: '11px', color: 'var(--muted2)' }}>{course.platform} · Module {course.modules_done || 0}/{course.total_modules}</div>
+              <div style={{ fontSize: '17px', fontWeight: 600, fontFamily: 'Georgia, serif', marginBottom: '1px' }}>{course.title}</div>
+              <div style={{ fontSize: '12px', color: 'var(--muted)' }}>{course.platform} · Module {course.modules_done || 0}/{course.total_modules}</div>
             </div>
             <div style={{ display: 'flex', gap: '4px' }}>
               <button onClick={() => setEditCourse({ ...course })} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '10px' }}>Edit</button>
               <button onClick={() => onDelete(course.id)} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '16px' }}>×</button>
             </div>
           </div>
-          <div style={{ fontSize: '11px', color: 'var(--muted2)', marginBottom: '4px' }}>{pct}% complete</div>
+          <div style={{ fontSize: '13px', fontWeight: 600, color: '#6B8E6B', marginBottom: '4px' }}>{pct}% complete</div>
           <div style={{ height: '3px', background: 'var(--surf3)', borderRadius: '2px', overflow: 'hidden', marginBottom: '10px' }}>
-            <div style={{ width: `${pct}%`, height: '100%', background: 'var(--learn)', borderRadius: '2px' }} />
+            <div style={{ width: `${pct}%`, height: '100%', background: '#6B8E6B', borderRadius: '2px' }} />
           </div>
           <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
             {['active', 'paused', 'finished'].map(s => (
@@ -58,7 +58,11 @@ function CourseCard({ course, editCourse, setEditCourse, onSaveEdit, onDelete, o
             ))}
           </div>
           <button onClick={() => onStartSession(course)}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', width: '100%', padding: '7px', background: 'none', border: '0.5px dashed var(--border)', borderRadius: '7px', color: 'var(--muted)', cursor: 'pointer', fontSize: '11px' }}>
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', width: '100%',
+              background: 'rgba(107, 142, 107, 0.15)', color: '#6B8E6B', border: '0.5px solid #6B8E6B',
+              borderRadius: '8px', padding: '10px 16px', fontSize: '13px', fontWeight: 500, cursor: 'pointer'
+            }}>
             + Log study session
           </button>
         </>

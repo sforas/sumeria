@@ -124,7 +124,7 @@ export default function Reading() {
             <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '16px', textAlign: 'center', color: 'var(--muted)', fontSize: '13px', marginBottom: '8px' }}>No books in progress</div>
           )}
           {reading.map(book => (
-            <div key={book.id} style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '12px 13px', marginBottom: '8px' }}>
+            <div key={book.id} style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderLeft: '2px solid #8B6F47', borderRadius: '0 10px 10px 0', padding: '12px 13px', marginBottom: '8px' }}>
               {editBook?.id === book.id ? (
                 <BookEditForm data={editBook} setData={setEditBook} onSave={saveBook} onCancel={() => setEditBook(null)} />
               ) : (
@@ -133,14 +133,17 @@ export default function Reading() {
                     <ReadingSymbol size={20} />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '1px' }}>{book.title}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--muted2)', marginBottom: '6px' }}>{book.author} · {book.format === 'physical' ? 'Physical' : 'Kindle'}</div>
+                    <div style={{ fontSize: '17px', fontWeight: 600, fontFamily: 'Georgia, serif', marginBottom: '1px' }}>{book.title}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '8px' }}>{book.author} · {book.format === 'physical' ? 'Physical' : 'Kindle'}</div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--muted2)', marginBottom: '4px' }}>
                       <span>Page {book.pages_read} of {book.total_pages}</span>
-                      <span>{book.total_pages > 0 ? Math.round(book.pages_read / book.total_pages * 100) : 0}%</span>
+                      <span style={{ fontSize: '13px', fontWeight: 600, color: '#8B6F47' }}>{book.total_pages > 0 ? Math.round(book.pages_read / book.total_pages * 100) : 0}%</span>
                     </div>
-                    <div style={{ height: '3px', background: 'var(--surf3)', borderRadius: '2px', overflow: 'hidden' }}>
-                      <div style={{ width: `${book.total_pages > 0 ? book.pages_read / book.total_pages * 100 : 0}%`, height: '100%', background: 'var(--read)', borderRadius: '2px' }} />
+                    <div style={{ height: '4px', background: 'var(--surf3)', borderRadius: '2px', overflow: 'hidden' }}>
+                      <div style={{ width: `${book.total_pages > 0 ? book.pages_read / book.total_pages * 100 : 0}%`, height: '100%', background: '#8B6F47', borderRadius: '2px' }} />
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px' }}>
+                      {book.total_pages - book.pages_read} páginas restantes
                     </div>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -177,7 +180,14 @@ export default function Reading() {
                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--fit)' }} />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '1px' }}>{book.title}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '1px' }}>
+                      <div style={{ fontSize: '15px', fontWeight: 500 }}>{book.title}</div>
+                      <span style={{
+                        display: 'inline-block', background: 'rgba(139, 111, 71, 0.15)',
+                        color: '#8B6F47', border: '0.5px solid rgba(139, 111, 71, 0.3)',
+                        borderRadius: '6px', padding: '1px 6px', fontSize: '9px', fontWeight: 500
+                      }}>Terminado</span>
+                    </div>
                     <div style={{ fontSize: '11px', color: 'var(--muted2)' }}>{book.author} · {book.total_pages} pages</div>
                   </div>
                   <button onClick={() => setEditBook({ ...book })} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '10px' }}>Edit</button>

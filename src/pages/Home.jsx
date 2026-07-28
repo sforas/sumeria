@@ -1401,9 +1401,11 @@ export default function Home() {
       })()}
 
       <div style={{ marginBottom: '14px' }}>
-        <div style={{ fontSize: '20px', fontWeight: 500, marginBottom: '3px' }}>{getGreeting()}</div>
-        <div style={{ fontSize: '12px', color: 'var(--muted2)' }}>
-          {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+        <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text)', fontFamily: 'Georgia, serif', marginBottom: '4px' }}>
+          {getGreeting()}, San
+        </div>
+        <div style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '4px' }}>
+          {new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })}
         </div>
         <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>
           {routineDone}/{routineItems.length} routines · {goalsDone}/{goals.length} goals · {medsDone}/{medicines.length} medicines
@@ -1437,9 +1439,9 @@ export default function Home() {
 
       {/* Daily priority card */}
       {journal?.priority && (
-        <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderLeft: '2px solid var(--acc)', borderRadius: '0 8px 8px 0', padding: '10px 13px', marginBottom: '12px' }}>
+        <div style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderLeft: '3px solid var(--acc)', borderRadius: '0 8px 8px 0', padding: '10px 13px', marginBottom: '12px' }}>
           <div style={{ fontSize: '10px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '3px' }}>Today's priority</div>
-          <div style={{ fontSize: '13px', fontWeight: 500 }}>{journal.priority}</div>
+          <div style={{ fontSize: '18px', fontWeight: 600 }}>{journal.priority}</div>
         </div>
       )}
 
@@ -1573,7 +1575,7 @@ export default function Home() {
                   )}
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '13px', fontWeight: 500, textDecoration: isDone ? 'line-through' : 'none', color: isDone ? 'var(--muted)' : 'var(--text)' }}>
+                  <div style={{ fontSize: isDone ? '13px' : '14px', fontWeight: 500, textDecoration: isDone ? 'line-through' : 'none', color: isDone ? 'var(--muted)' : 'var(--text)' }}>
                     {routine.title}
                   </div>
                   <div style={{ fontSize: '11px', color: isActive ? 'var(--fit)' : AREA_COLORS[routine.area] || 'var(--muted)', marginTop: '1px' }}>
@@ -1590,7 +1592,7 @@ export default function Home() {
                 <HealthSymbol size={20} />
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '13px', fontWeight: 500, textDecoration: medLog[med.id] ? 'line-through' : 'none', color: medLog[med.id] ? 'var(--muted)' : 'var(--text)' }}>{med.name}</div>
+                <div style={{ fontSize: medLog[med.id] ? '13px' : '14px', fontWeight: 500, textDecoration: medLog[med.id] ? 'line-through' : 'none', color: medLog[med.id] ? 'var(--muted)' : 'var(--text)' }}>{med.name}</div>
                 <div style={{ fontSize: '11px', color: 'var(--muted2)' }}>{med.dose} · {med.time}{med.with_food ? ' · with food' : ''}</div>
               </div>
               <div onClick={e => { e.stopPropagation(); toggleMed(med) }} style={{ width: '22px', height: '22px', borderRadius: '50%', border: medLog[med.id] ? 'none' : '1.5px solid var(--border)', background: medLog[med.id] ? 'var(--health)' : 'none', cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#fff' }}>
@@ -1604,7 +1606,7 @@ export default function Home() {
                 <SocialSymbol size={20} />
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '13px', fontWeight: 500 }}>{reminder.title}</div>
+                <div style={{ fontSize: '14px', fontWeight: 500 }}>{reminder.title}</div>
                 <div style={{ fontSize: '11px', color: 'var(--muted2)' }}>{reminder.contacts?.name}</div>
               </div>
               <button onClick={() => completeContactReminder(reminder.id)} style={{ background: 'var(--social)', border: 'none', borderRadius: '6px', color: '#fff', fontSize: '11px', padding: '5px 10px', cursor: 'pointer', fontWeight: 500, flexShrink: 0 }}>Done</button>
@@ -1620,7 +1622,7 @@ export default function Home() {
               opacity: ev.done ? 0.5 : 1
             }}>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '13px', fontWeight: 500, textDecoration: ev.done ? 'line-through' : 'none', color: ev.done ? 'var(--muted)' : 'var(--text)' }}>
+                <div style={{ fontSize: ev.done ? '13px' : '14px', fontWeight: 500, textDecoration: ev.done ? 'line-through' : 'none', color: ev.done ? 'var(--muted)' : 'var(--text)' }}>
                   {ev.title}
                 </div>
                 <div style={{ fontSize: '11px', color: 'var(--muted2)', marginTop: '1px' }}>
