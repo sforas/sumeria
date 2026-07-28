@@ -12,7 +12,12 @@ serve(async (req) => {
   }
 
   try {
-    const { title, body, url } = await req.json()
+    const { title, body, url, delay } = await req.json()
+
+    const delaySeconds = delay || 0
+    if (delaySeconds > 0) {
+      await new Promise(resolve => setTimeout(resolve, delaySeconds * 1000))
+    }
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',

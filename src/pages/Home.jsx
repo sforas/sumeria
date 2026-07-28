@@ -560,14 +560,13 @@ export default function Home() {
 
   async function scheduleRestEndNotification(seconds) {
     try {
-      setTimeout(async () => {
-        await supabase.functions.invoke('send-push-notification', {
-          body: {
-            title: 'Descanso terminado',
-            body: 'Tiempo para el siguiente set.'
-          }
-        })
-      }, seconds * 1000)
+      await supabase.functions.invoke('send-push-notification', {
+        body: {
+          title: 'Descanso terminado',
+          body: 'Tiempo para el siguiente set.',
+          delay: seconds
+        }
+      })
     } catch {}
   }
 
