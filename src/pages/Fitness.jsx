@@ -69,6 +69,7 @@ export default function Fitness() {
   const [prs, setPrs] = useState([])
   const [todayRoutines, setTodayRoutines] = useState([])
   const [completedSets, setCompletedSets] = useState({})
+  const [exerciseHistory, setExerciseHistory] = useState(null)
   const photoInputRef = useRef(null)
 
   useEffect(() => { fetchData(); fetchPhotos(); fetchTodayRoutines() }, [])
@@ -90,6 +91,16 @@ export default function Fitness() {
       const newVal = setIndex < current ? setIndex : setIndex + 1
       return { ...prev, [exId]: newVal }
     })
+  }
+
+  async function fetchExerciseHistory(exerciseName) {
+    const { data } = await supabase
+      .from('workout_sets')
+      .select('*')
+      .eq('exercise_name', exerciseName)
+      .order('created_at', { ascending: true })
+
+    setExerciseHistory({ exerciseName, data: data || [] })
   }
 
   async function fetchData() {
@@ -562,7 +573,17 @@ export default function Fitness() {
                 return (
                   <div key={ex.id} style={{ background: 'var(--surf)', border: '0.5px solid var(--border)', borderRadius: '10px', padding: '12px 13px', marginBottom: '8px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                      <div style={{ fontSize: '13px', color: 'var(--text)' }}>{ex.name}</div>
+                      <div
+                        onClick={() => fetchExerciseHistory(ex.name)}
+                        style={{
+                          fontSize: '14px', fontWeight: 500, color: 'var(--text)',
+                          cursor: 'pointer', textDecoration: 'underline',
+                          textDecorationColor: 'var(--border)',
+                          textDecorationStyle: 'dotted'
+                        }}
+                      >
+                        {ex.name}
+                      </div>
                       <div style={{ fontSize: '12px', color: 'var(--fit)', fontWeight: 700 }}>{ex.sets} × {ex.reps}</div>
                     </div>
                     <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
@@ -589,6 +610,195 @@ export default function Fitness() {
             </div>
           )}
         </>
+      )}
+
+      {exerciseHistory && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+          zIndex: 200, display: 'flex', alignItems: 'flex-end'
+        }} onClick={() => setExerciseHistory(null)}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: 'var(--surf)', borderRadius: '20px 20px 0 0',
+            padding: '20px 16px', width: '100%',
+            maxHeight: '70vh', overflowY: 'auto'
+          }}>
+            <div style={{
+              fontFamily: 'Georgia, serif', fontSize: '18px',
+              color: 'var(--fit)', marginBottom: '4px', fontWeight: 500
+            }}>
+              {exerciseHistory.exerciseName}
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '16px' }}>
+              Historial de rendimiento
+            </div>
+
+            {exerciseHistory.data.length === 0 ? (
+              <div style={{
+                fontSize: '13px', color: 'var(--muted)',
+                textAlign: 'center', padding: '24px 0'
+              }}>
+                No hay datos aún. Completa un workout para ver tu progresión.
+              </div>
+            ) : (() => {
+              const byDate = {}
+              exerciseHistory.data.forEach(row => {
+                const date = row.workout_date
+                if (!byDate[date]) byDate[date] = []
+                byDate[date].push(row)
+              })
+              const dates = Object.keys(byDate).sort().reverse()
+
+              const allReps = exerciseHistory.data
+                .filter(r => r.reps != null)
+                .map(r => r.reps)
+              const pr = allReps.length > 0 ? Math.max(...allReps) : null
+
+              const sessionAvgs = dates.map(date => {
+                const reps = byDate[date].filter(r => r.reps != null).map(r => r.reps)
+                return reps.length > 0 ? reps.reduce((a, b) => a + b, 0) / reps.length : 0
+              })
+
+              return (
+                <>
+                  <div style={{
+                    display: 'flex', gap: '12px', marginBottom: '20px'
+                  }}>
+                    {pr && (
+                      <div style={{
+                        flex: 1, background: 'var(--surf2)',
+                        borderRadius: '10px', padding: '12px',
+                        border: '0.5px solid var(--fit)',
+                        textAlign: 'center'
+                      }}>
+                        <div style={{ fontSize: '22px', fontWeight: 700, color: 'var(--fit)' }}>
+                          {pr}
+                        </div>
+                        <div style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '2px' }}>
+                          mejor set (reps)
+                        </div>
+                      </div>
+                    )}
+                    <div style={{
+                      flex: 1, background: 'var(--surf2)',
+                      borderRadius: '10px', padding: '12px',
+                      textAlign: 'center'
+                    }}>
+                      <div style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text)' }}>
+                        {dates.length}
+                      </div>
+                      <div style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '2px' }}>
+                        sesiones
+                      </div>
+                    </div>
+                    <div style={{
+                      flex: 1, background: 'var(--surf2)',
+                      borderRadius: '10px', padding: '12px',
+                      textAlign: 'center'
+                    }}>
+                      <div style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text)' }}>
+                        {exerciseHistory.data.length}
+                      </div>
+                      <div style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '2px' }}>
+                        sets totales
+                      </div>
+                    </div>
+                  </div>
+
+                  {sessionAvgs.length > 1 && (
+                    <div style={{ marginBottom: '20px' }}>
+                      <div style={{
+                        fontSize: '10px', color: 'var(--muted)',
+                        textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '8px'
+                      }}>
+                        Tendencia (reps promedio por sesión)
+                      </div>
+                      <div style={{
+                        display: 'flex', alignItems: 'flex-end', gap: '4px',
+                        height: '48px'
+                      }}>
+                        {[...sessionAvgs].reverse().map((avg, i) => {
+                          const maxAvg = Math.max(...sessionAvgs)
+                          const barH = maxAvg > 0 ? (avg / maxAvg) * 44 : 4
+                          const isLatest = i === sessionAvgs.length - 1
+                          return (
+                            <div key={i} style={{
+                              flex: 1, display: 'flex',
+                              flexDirection: 'column', alignItems: 'center', gap: '2px'
+                            }}>
+                              <div style={{
+                                width: '100%', height: `${barH}px`,
+                                background: isLatest ? 'var(--fit)' : 'var(--surf3)',
+                                borderRadius: '3px 3px 0 0',
+                                minHeight: '4px'
+                              }} />
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  <div style={{
+                    fontSize: '10px', color: 'var(--muted)',
+                    textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '8px'
+                  }}>
+                    Por sesión
+                  </div>
+                  {dates.map(date => {
+                    const sets = byDate[date]
+                    const reps = sets.filter(r => r.reps != null).map(r => r.reps)
+                    const total = reps.reduce((a, b) => a + b, 0)
+                    const displayDate = new Date(date + 'T12:00:00').toLocaleDateString('es-MX', {
+                      day: 'numeric', month: 'short'
+                    })
+                    return (
+                      <div key={date} style={{
+                        padding: '10px 0',
+                        borderBottom: '0.5px solid var(--border)'
+                      }}>
+                        <div style={{
+                          display: 'flex', justifyContent: 'space-between',
+                          marginBottom: '6px'
+                        }}>
+                          <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: 500 }}>
+                            {displayDate}
+                          </div>
+                          <div style={{ fontSize: '11px', color: 'var(--muted)' }}>
+                            {total > 0 ? `${total} reps totales` : ''}
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                          {sets.map((s, i) => (
+                            <div key={i} style={{
+                              background: 'var(--surf3)',
+                              borderRadius: '6px',
+                              padding: '4px 8px',
+                              fontSize: '12px',
+                              color: s.reps != null ? 'var(--fit)' : 'var(--muted)',
+                              fontWeight: 500
+                            }}>
+                              {s.reps != null ? `${s.reps} reps` : 'hecho'}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </>
+              )
+            })()}
+
+            <button onClick={() => setExerciseHistory(null)} style={{
+              width: '100%', background: 'none',
+              border: '0.5px solid var(--border)',
+              borderRadius: '10px', color: 'var(--muted)',
+              fontSize: '13px', padding: '12px',
+              cursor: 'pointer', marginTop: '16px'
+            }}>
+              Cerrar
+            </button>
+          </div>
+        </div>
       )}
     </div>
   )
