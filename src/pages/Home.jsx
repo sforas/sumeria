@@ -90,6 +90,7 @@ export default function Home() {
   const [currentSetIndex, setCurrentSetIndex] = useState(0)
   const [setReps, setSetReps] = useState('')
   const [completedSets, setCompletedSets] = useState({})
+  const [lastSessionData, setLastSessionData] = useState({})
   const [startTimestamp, setStartTimestamp] = useState(null)
   const [elapsedMs, setElapsedMs] = useState(0)
   const [restTimer, setRestTimer] = useState(0)
@@ -349,6 +350,35 @@ export default function Home() {
     setShowPriorityCheck(false)
   }
 
+  async function fetchLastSession(exerciseNames) {
+    const { data } = await supabase
+      .from('workout_sets')
+      .select('exercise_name, reps, set_number, workout_date')
+      .in('exercise_name', exerciseNames)
+      .order('workout_date', { ascending: false })
+      .order('set_number', { ascending: true })
+
+    const lastSession = {}
+    if (data) {
+      const latestDates = {}
+      data.forEach(row => {
+        if (!latestDates[row.exercise_name] ||
+            row.workout_date > latestDates[row.exercise_name]) {
+          latestDates[row.exercise_name] = row.workout_date
+        }
+      })
+      data.forEach(row => {
+        if (row.workout_date === latestDates[row.exercise_name]) {
+          if (!lastSession[row.exercise_name]) {
+            lastSession[row.exercise_name] = []
+          }
+          lastSession[row.exercise_name].push(row.reps)
+        }
+      })
+    }
+    return lastSession
+  }
+
   function openRoutineModal(routine) {
     const isDone = routineLog[routine.id]?.done
     const isActive = !!activeTimers[routine.id]
@@ -360,10 +390,13 @@ export default function Home() {
         .select('*')
         .eq('routine_id', routine.id)
         .order('order_index')
-        .then(({ data }) => {
+        .then(async ({ data }) => {
           setRoutineExercises(data || [])
           setWorkoutExercises(data || [])
           setSetReps('')
+
+          const names = (data || []).map(ex => ex.name)
+          setLastSessionData(names.length ? await fetchLastSession(names) : {})
 
           if (isActive) {
             // Resuming an in-progress workout — try to restore tracked
@@ -565,6 +598,7 @@ export default function Home() {
     setCurrentExerciseIndex(0)
     setCurrentSetIndex(0)
     setCompletedSets({})
+    setLastSessionData({})
     setSetReps('')
     setRestTimer(0)
     setRestEndTimestamp(null)
@@ -783,6 +817,27 @@ export default function Home() {
                     Set {currentSetIndex + 1} / {getCurrentExercise().sets}
                   </div>
 
+                  {lastSessionData[getCurrentExercise()?.name] && (
+                    <div style={{
+                      fontSize: '11px',
+                      color: 'var(--muted)',
+                      marginBottom: '12px',
+                      padding: '6px 10px',
+                      background: 'var(--surf3)',
+                      borderRadius: '6px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}>
+                      <span style={{ color: 'var(--muted2)' }}>Última sesión:</span>
+                      <span style={{ color: 'var(--fit)', fontWeight: 500 }}>
+                        {lastSessionData[getCurrentExercise().name]
+                          .map(r => r === null ? 'hecho' : r)
+                          .join(' · ')}
+                      </span>
+                    </div>
+                  )}
+
                   {/* Reps input or session button */}
                   {isSessionExercise(getCurrentExercise()) ? (
                     <button onClick={handleSetComplete} style={{
@@ -861,12 +916,22 @@ export default function Home() {
                               {ex.name}
                             </div>
                           </div>
-                          <div style={{ fontSize: '11px', color: 'var(--muted2)' }}>
-                            {isComplete
-                              ? done.join(' · ') + ' reps'
-                              : `${ex.sets} × ${ex.reps}`
-                            }
-                          </div>
+                          {isComplete ? (
+                            <div style={{ fontSize: '11px', color: 'var(--muted2)' }}>
+                              {done.join(' · ') + ' reps'}
+                            </div>
+                          ) : (
+                            <div style={{ textAlign: 'right' }}>
+                              <div style={{ fontSize: '11px', color: 'var(--muted2)' }}>
+                                {ex.sets} × {ex.reps}
+                              </div>
+                              {lastSessionData[ex.name] && (
+                                <div style={{ fontSize: '10px', color: 'var(--muted2)', opacity: 0.7 }}>
+                                  ant: {lastSessionData[ex.name].map(r => r ?? '✓').join('·')}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       )
                     })}
