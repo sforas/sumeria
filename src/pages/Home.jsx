@@ -120,6 +120,7 @@ export default function Home() {
       const data = JSON.parse(saved)
       const fourHoursAgo = Date.now() - 4 * 60 * 60 * 1000
       if (data.startTimestamp && data.startTimestamp > fourHoursAgo) {
+        console.log('Restoring workout state:', data.completedSets)
         setStartTimestamp(data.startTimestamp)
         setWorkoutExercises(data.workoutExercises || [])
         setCurrentExerciseIndex(data.currentExerciseIndex || 0)
@@ -177,6 +178,7 @@ export default function Home() {
   // Persist in-progress workout state so it survives the app being backgrounded/reloaded
   useEffect(() => {
     if (modal?.isActive && modal.routine.quick_log_type === 'workout' && startTimestamp) {
+      console.log('Saving workout state:', { completedSets, currentExerciseIndex })
       localStorage.setItem('sumeria_active_workout', JSON.stringify({
         routineId: modal.routine.id,
         routineTitle: modal.routine.title,
@@ -700,7 +702,11 @@ export default function Home() {
     const workoutProgress = totalSets > 0 ? completedSetsCount / totalSets : 0
 
     return (
-      <div onClick={() => { setModal(null); resetWorkoutState() }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.75)', display: 'flex', alignItems: 'flex-end', zIndex: 200 }}>
+      <div onClick={() => {
+        const isActiveWorkout = modal?.isActive && modal.routine.quick_log_type === 'workout'
+        setModal(null)
+        if (!isActiveWorkout) resetWorkoutState()
+      }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.75)', display: 'flex', alignItems: 'flex-end', zIndex: 200 }}>
         <div onClick={e => e.stopPropagation()} style={{ background: 'var(--surf)', borderRadius: '14px 14px 0 0', padding: '20px 18px 40px', width: '100%', maxHeight: '85vh', overflowY: 'auto' }}>
 
           <div style={{ fontSize: '15px', fontWeight: 500, marginBottom: '3px' }}>{routine.title}</div>
