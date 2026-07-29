@@ -108,8 +108,16 @@ export default function Home() {
   const timerRef = useRef(null)
   const repsInputRef = useRef(null)
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { fetchAll() }, [])
+  /* eslint-disable react-hooks/exhaustive-deps */
+  useEffect(() => {
+    fetchAll()
+    // Re-fetch at midnight to update schedule for new day
+    const now = new Date()
+    const msUntilMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 5).getTime() - now.getTime()
+    const midnightTimer = setTimeout(() => fetchAll(), msUntilMidnight)
+    return () => clearTimeout(midnightTimer)
+  }, [])
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   // Restore an in-progress workout from localStorage on mount (survives app
   // backgrounding / reload — activeTimers alone doesn't carry set-by-set progress)
@@ -262,7 +270,9 @@ export default function Home() {
     const todayMeds = (medsData || []).filter(med => {
       if (med.frequency === 'daily') return true
       if (med.frequency === 'alternate' && med.alternate_start) {
-        const diff = Math.floor((new Date() - new Date(med.alternate_start)) / 86400000)
+        const start = new Date(med.alternate_start + 'T00:00:00')
+        const todayDate = new Date(today() + 'T00:00:00')
+        const diff = Math.round((todayDate - start) / (1000 * 60 * 60 * 24))
         return diff % 2 === 0
       }
       return true

@@ -20,9 +20,9 @@ function calcDuration(sleep, wake) {
 
 function isAlternateDay(startDate) {
   if (!startDate) return true
-  const start = new Date(startDate)
-  const now = new Date()
-  const diff = Math.floor((now - start) / (1000 * 60 * 60 * 24))
+  const start = new Date(startDate + 'T00:00:00')
+  const todayDate = new Date(today() + 'T00:00:00')
+  const diff = Math.round((todayDate - start) / (1000 * 60 * 60 * 24))
   return diff % 2 === 0
 }
 
