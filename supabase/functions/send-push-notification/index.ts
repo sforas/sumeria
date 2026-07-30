@@ -14,15 +14,24 @@ serve(async (req) => {
   try {
     const { title, body, url, delay } = await req.json()
 
-    const delaySeconds = delay || 0
-    if (delaySeconds > 0) {
-      await new Promise(resolve => setTimeout(resolve, delaySeconds * 1000))
-    }
-
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
+
+    const delaySeconds = delay || 0
+    if (delaySeconds > 0) {
+      const sendAt = new Date(Date.now() + delaySeconds * 1000).toISOString()
+      const { error: queueError } = await supabase
+        .from('notification_queue')
+        .insert({ title, body, send_at: sendAt })
+      if (queueError) throw queueError
+
+      return new Response(
+        JSON.stringify({ success: true, queued: true, send_at: sendAt }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
     const { data: subscriptions, error } = await supabase
       .from('push_subscriptions')

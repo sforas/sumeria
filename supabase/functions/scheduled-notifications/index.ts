@@ -30,6 +30,21 @@ async function sendPush(supabase: any, title: string, body: string) {
   )
 }
 
+async function processQueue(supabase: any) {
+  const { data: due } = await supabase
+    .from('notification_queue')
+    .select('*')
+    .eq('sent', false)
+    .lte('send_at', new Date().toISOString())
+
+  if (!due || due.length === 0) return
+
+  for (const item of due) {
+    await sendPush(supabase, item.title, item.body)
+    await supabase.from('notification_queue').update({ sent: true }).eq('id', item.id)
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -40,6 +55,8 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
+
+    await processQueue(supabase)
 
     const { type } = await req.json()
 
