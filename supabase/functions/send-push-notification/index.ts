@@ -20,7 +20,10 @@ serve(async (req) => {
     )
 
     const delaySeconds = delay || 0
-    if (delaySeconds > 0) {
+
+    // Long rest — sleeping in-request would risk the function's timeout,
+    // so hand it off to the queue that scheduled-notifications drains.
+    if (delaySeconds > 90) {
       const sendAt = new Date(Date.now() + delaySeconds * 1000).toISOString()
       const { error: queueError } = await supabase
         .from('notification_queue')
@@ -31,6 +34,12 @@ serve(async (req) => {
         JSON.stringify({ success: true, queued: true, send_at: sendAt }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
+    }
+
+    // Short rest — fits comfortably inside the function timeout, so sleep
+    // in-request and send below for second-accurate delivery.
+    if (delaySeconds > 0) {
+      await new Promise(resolve => setTimeout(resolve, delaySeconds * 1000))
     }
 
     const { data: subscriptions, error } = await supabase

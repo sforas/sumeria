@@ -744,6 +744,9 @@ export default function Home() {
     const totalSets = workoutExercises.reduce((sum, ex) => sum + (parseInt(ex.sets) || 1), 0)
     const completedSetsCount = Object.values(completedSets).reduce((sum, sets) => sum + sets.length, 0)
     const workoutProgress = totalSets > 0 ? completedSetsCount / totalSets : 0
+    const restExerciseName = restType === 'sets'
+      ? getCurrentExercise()?.name
+      : workoutExercises[currentExerciseIndex]?.name
 
     return (
       <div onClick={() => {
@@ -1015,8 +1018,30 @@ export default function Home() {
               {workoutPhase === 'resting' && (
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '8px' }}>
-                    {restType === 'sets' ? 'Rest between sets' : 'Rest before next exercise'}
+                    {restType === 'sets' ? 'Descanso entre sets' : 'Descansando antes de'}
                   </div>
+                  <div style={{
+                    fontSize: '18px', fontWeight: 600, color: 'var(--fit)',
+                    fontFamily: 'Georgia, serif', marginBottom: '4px'
+                  }}>
+                    {restExerciseName}
+                  </div>
+                  {restExerciseName && lastSessionData[restExerciseName] && (
+                    <div style={{
+                      fontSize: '11px', color: 'var(--muted)',
+                      marginBottom: '16px',
+                      padding: '6px 12px',
+                      background: 'var(--surf3)',
+                      borderRadius: '6px',
+                      display: 'inline-block'
+                    }}>
+                      Última sesión: <span style={{ color: 'var(--fit)', fontWeight: 500 }}>
+                        {lastSessionData[restExerciseName]
+                          .map(r => r === null ? '✓' : r)
+                          .join(' · ')}
+                      </span>
+                    </div>
+                  )}
                   <div style={{
                     fontSize: '56px', fontWeight: 700,
                     color: restTimer <= 10 ? 'var(--danger)' : 'var(--fit)',
@@ -1024,11 +1049,6 @@ export default function Home() {
                   }}>
                     {Math.floor(restTimer / 60)}:{String(restTimer % 60).padStart(2, '0')}
                   </div>
-                  {restType === 'exercises' && workoutExercises[currentExerciseIndex] && (
-                    <div style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '16px' }}>
-                      Next: {workoutExercises[currentExerciseIndex].name}
-                    </div>
-                  )}
                   <button onClick={() => {
                     setRestEndTimestamp(null)
                     setRestTimer(0)
