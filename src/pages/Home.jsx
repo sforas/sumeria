@@ -48,6 +48,21 @@ const AREAS = [
   { id: 'social', label: 'Social', color: 'var(--social)' },
 ]
 
+const FREQUENCY_DAYS = {
+  '3days': 3,
+  weekly: 7,
+  biweekly: 14,
+  monthly: 30,
+  none: null
+}
+
+const FREQUENCY_LABEL = {
+  '3days': 'cada 3 días',
+  weekly: 'cada semana',
+  biweekly: 'cada 2 semanas',
+  monthly: 'cada mes'
+}
+
 function formatElapsed(ms) {
   const mins = Math.floor(ms / 60000)
   const hrs = Math.floor(mins / 60)
@@ -68,6 +83,8 @@ export default function Home() {
   const [medLog, setMedLog] = useState({})
   const [reminders, setReminders] = useState([])
   const [contactReminders, setContactReminders] = useState([])
+  const [dueContacts, setDueContacts] = useState([])
+  const [contactToConfirm, setContactToConfirm] = useState(null)
   const [todayCalendarEvents, setTodayCalendarEvents] = useState([])
   const [activeTimers, setActiveTimers] = useState({})
   const [elapsed, setElapsed] = useState({})
@@ -229,6 +246,7 @@ export default function Home() {
       { data: medLogData },
       { data: remindersData },
       { data: contactRemindersData },
+      { data: contactsData },
       { data: timersData },
       { data: booksData },
       { data: coursesData },
@@ -244,6 +262,7 @@ export default function Home() {
       supabase.from('med_log').select('*').eq('date', today()),
       supabase.from('reminders').select('*, contacts(name)').eq('remind_on', today()).eq('done', false),
       supabase.from('contact_reminders').select('*, contacts(name)').eq('remind_on', today()).eq('done', false),
+      supabase.from('contacts').select('*'),
       supabase.from('activity_timers').select('*').eq('date', today()).is('ended_at', null),
       supabase.from('books').select('*').eq('status', 'reading'),
       supabase.from('courses').select('*').eq('status', 'active'),
@@ -286,6 +305,21 @@ export default function Home() {
 
     setReminders(remindersData || [])
     setContactReminders(contactRemindersData || [])
+
+    const todayStr = today()
+    const due = (contactsData || []).filter(contact => {
+      const days = FREQUENCY_DAYS[contact.contact_frequency]
+      if (!days) return false
+
+      if (!contact.last_contacted) return true
+
+      const lastDate = new Date(contact.last_contacted + 'T00:00:00')
+      const todayDate = new Date(todayStr + 'T00:00:00')
+      const diffDays = Math.round((todayDate - lastDate) / (1000 * 60 * 60 * 24))
+      return diffDays >= days
+    })
+    setDueContacts(due)
+
     setTodayCalendarEvents(calendarEventsData || [])
     setBooks(booksData || [])
     setCourses(coursesData || [])
@@ -991,7 +1025,7 @@ export default function Home() {
                     Rest before next exercise
                   </div>
                   <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                    {[[120, '2 min'], [150, '2:30'], [180, '3 min']].map(([secs, label]) => (
+                    {[[90, '1:30'], [120, '2 min'], [150, '2:30']].map(([secs, label]) => (
                       <button key={secs} onClick={() => startRestTimer(secs, 'exercises')}
                         style={{
                           flex: 1, background: 'var(--surf3)',
@@ -1620,7 +1654,7 @@ export default function Home() {
         </>
       )}
 
-      {(routineItems.length > 0 || medicines.length > 0 || contactReminders.length > 0 || todayCalendarEvents.length > 0) && (
+      {(routineItems.length > 0 || medicines.length > 0 || contactReminders.length > 0 || dueContacts.length > 0 || todayCalendarEvents.length > 0) && (
         <>
           <div style={{ fontSize: '10px', fontWeight: 500, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.6px', marginBottom: '8px' }}>Today's schedule</div>
           {routineItems.map(routine => {
@@ -1682,6 +1716,41 @@ export default function Home() {
                 <div style={{ fontSize: '11px', color: 'var(--muted2)' }}>{reminder.contacts?.name}</div>
               </div>
               <button onClick={() => completeContactReminder(reminder.id)} style={{ background: 'var(--social)', border: 'none', borderRadius: '6px', color: '#fff', fontSize: '11px', padding: '5px 10px', cursor: 'pointer', fontWeight: 500, flexShrink: 0 }}>Done</button>
+            </div>
+          ))}
+          {dueContacts.map(contact => (
+            <div key={`due-${contact.id}`} style={{
+              display: 'flex', alignItems: 'center', gap: '12px',
+              padding: '12px 14px',
+              background: 'var(--surf)',
+              border: '0.5px solid var(--border)',
+              borderLeft: '2px solid #B5724A',
+              borderRadius: '0 8px 8px 0',
+              marginBottom: '6px',
+              cursor: contact.phone ? 'pointer' : 'default'
+            }} onClick={() => {
+              if (contact.phone) {
+                const phone = contact.phone.replace(/\D/g, '')
+                window.open(`https://wa.me/${phone}`, '_blank')
+                setContactToConfirm(contact)
+              }
+            }}>
+              <div style={{ width: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#B5724A' }}>
+                <SocialSymbol size={18} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text)' }}>
+                  Escribirle a {contact.name}
+                </div>
+                <div style={{ fontSize: '11px', color: '#B5724A', marginTop: '1px' }}>
+                  social · {FREQUENCY_LABEL[contact.contact_frequency] || ''}
+                </div>
+              </div>
+              {contact.phone && (
+                <div style={{ fontSize: '11px', color: '#B5724A', opacity: 0.7 }}>
+                  WhatsApp →
+                </div>
+              )}
             </div>
           ))}
           {todayCalendarEvents.length > 0 && todayCalendarEvents.map(ev => (
@@ -1792,6 +1861,53 @@ export default function Home() {
       )}
 
       {renderModal()}
+
+      {contactToConfirm && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+          zIndex: 300, display: 'flex', alignItems: 'center',
+          justifyContent: 'center', padding: '20px'
+        }}>
+          <div style={{
+            background: 'var(--surf)', borderRadius: '16px',
+            padding: '24px 20px', width: '100%', maxWidth: '320px',
+            textAlign: 'center'
+          }}>
+            <div style={{
+              fontSize: '16px', fontWeight: 600, color: 'var(--text)',
+              marginBottom: '8px', fontFamily: 'Georgia, serif'
+            }}>
+              ¿Ya le escribiste a {contactToConfirm.name}?
+            </div>
+            <div style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '20px' }}>
+              Esto actualizará cuándo fue el último contacto.
+            </div>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button onClick={async () => {
+                await supabase.from('contacts')
+                  .update({ last_contacted: today() })
+                  .eq('id', contactToConfirm.id)
+                setDueContacts(prev => prev.filter(c => c.id !== contactToConfirm.id))
+                setContactToConfirm(null)
+              }} style={{
+                flex: 1, background: '#B5724A', border: 'none',
+                borderRadius: '10px', color: '#000', fontSize: '14px',
+                padding: '14px', cursor: 'pointer', fontWeight: 600
+              }}>
+                Sí, ya le escribí
+              </button>
+              <button onClick={() => setContactToConfirm(null)} style={{
+                flex: 1, background: 'var(--surf3)',
+                border: '0.5px solid var(--border)',
+                borderRadius: '10px', color: 'var(--muted)',
+                fontSize: '14px', padding: '14px', cursor: 'pointer'
+              }}>
+                Todavía no
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {stageUp && (
         <StageUpAnimation
