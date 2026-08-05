@@ -23,7 +23,7 @@ serve(async (req) => {
 
     // Long rest — sleeping in-request would risk the function's timeout,
     // so hand it off to the queue that scheduled-notifications drains.
-    if (delaySeconds > 90) {
+    if (delaySeconds > 150) {
       const sendAt = new Date(Date.now() + delaySeconds * 1000).toISOString()
       const { error: queueError } = await supabase
         .from('notification_queue')
