@@ -1,33 +1,45 @@
 import { useEffect, useState } from 'react'
 
 const PALETTES = {
-  dawn: {
-    bg: '#0D0818', surf: '#150F22', surf2: '#1C1530', surf3: '#231B38',
-    border: 'rgba(200,160,216,0.08)', text: '#F0E8F8', muted: '#9A88B0', muted2: '#6A5880',
-    acc: '#C17F3A', acc2: '#8B5A28', sky1: '#1A0F2E', sky2: '#4A2060'
+  amanecer: {
+    bg: '#120806', surf: '#221008', surf2: '#301808', surf3: '#3A2010',
+    border: 'rgba(240,160,80,0.1)', text: '#F8E0C8', muted: '#E8905A', muted2: '#A05030',
+    acc: '#F0A030', acc2: '#C07020', sky1: '#1A0C06', sky2: '#3A1808'
   },
-  day: {
-    bg: '#080C18', surf: '#0E1422', surf2: '#141C2E', surf3: '#1A2438',
-    border: 'rgba(180,200,240,0.08)', text: '#E8F0F8', muted: '#7A90A8', muted2: '#4A6078',
-    acc: '#D4A843', acc2: '#A07828', sky1: '#081828', sky2: '#1A3858'
+  manana: {
+    bg: '#0A1E30', surf: '#122A40', surf2: '#1A3850', surf3: '#223060',
+    border: 'rgba(144,200,240,0.1)', text: '#D8F0FF', muted: '#90C8F0', muted2: '#5090B8',
+    acc: '#F8E868', acc2: '#C0B030', sky1: '#0A1828', sky2: '#183848'
   },
-  dusk: {
-    bg: '#0E0808', surf: '#1A1010', surf2: '#221818', surf3: '#2A2020',
-    border: 'rgba(220,140,100,0.08)', text: '#F8EDE8', muted: '#A88070', muted2: '#785848',
-    acc: '#C46B3A', acc2: '#8B4A28', sky1: '#1A0808', sky2: '#3A1818'
+  dia: {
+    bg: '#06101C', surf: '#0C1C2E', surf2: '#122438', surf3: '#183050',
+    border: 'rgba(88,160,224,0.1)', text: '#C0E0FF', muted: '#58A0E0', muted2: '#306880',
+    acc: '#F0B820', acc2: '#B88010', sky1: '#060E18', sky2: '#102030'
   },
-  night: {
-    bg: '#06080E', surf: '#0C0E18', surf2: '#121420', surf3: '#181A28',
-    border: 'rgba(100,120,160,0.08)', text: '#D8E0F0', muted: '#586878', muted2: '#384858',
-    acc: '#4A6B8E', acc2: '#2A4A6E', sky1: '#060810', sky2: '#0E1428'
+  tarde: {
+    bg: '#0C1018', surf: '#141820', surf2: '#1C2030', surf3: '#242840',
+    border: 'rgba(112,136,168,0.1)', text: '#C8D8E8', muted: '#7088A8', muted2: '#405068',
+    acc: '#C09840', acc2: '#907020', sky1: '#0A0E14', sky2: '#181E28'
+  },
+  atardecer: {
+    bg: '#0E0818', surf: '#180E28', surf2: '#221638', surf3: '#2C1E48',
+    border: 'rgba(152,104,200,0.1)', text: '#E0C8F8', muted: '#9868C8', muted2: '#604890',
+    acc: '#C070A0', acc2: '#903060', sky1: '#0C0614', sky2: '#1A1030'
+  },
+  noche: {
+    bg: '#060810', surf: '#0C1020', surf2: '#101828', surf3: '#161E30',
+    border: 'rgba(88,120,160,0.08)', text: '#C0D0E8', muted: '#5878A0', muted2: '#304060',
+    acc: '#3A6890', acc2: '#1A4870', sky1: '#04060C', sky2: '#0C1020'
   }
 }
 
 export function getPeriod(hour = new Date().getHours()) {
-  if (hour >= 5 && hour < 10) return 'dawn'
-  if (hour >= 10 && hour < 16) return 'day'
-  if (hour >= 16 && hour < 20) return 'dusk'
-  return 'night'
+  if (hour >= 5 && hour < 7) return 'amanecer'
+  if (hour >= 7 && hour < 12) return 'manana'
+  if (hour >= 12 && hour < 16) return 'dia'
+  if (hour >= 16 && hour < 19) return 'tarde'
+  if (hour >= 19 && hour < 21) return 'atardecer'
+  return 'noche'
 }
 
 function applyAtmosphere() {
@@ -54,15 +66,15 @@ export function useAtmosphere() {
 
   useEffect(() => {
     setPeriod(applyAtmosphere())
-    const raf = requestAnimationFrame(() => document.body.classList.add('atmosphere-ready'))
-
+    const raf = requestAnimationFrame(() =>
+      document.body.classList.add('atmosphere-ready')
+    )
     const id = setInterval(() => {
       setPeriod(prev => {
         const next = applyAtmosphere()
         return next === prev ? prev : next
       })
     }, 60000)
-
     return () => {
       cancelAnimationFrame(raf)
       clearInterval(id)

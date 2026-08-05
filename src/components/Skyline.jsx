@@ -26,7 +26,7 @@ const GROUND_Y = 128
 
 export default function Skyline({ points = {}, onBuildingClick }) {
   const period = getPeriod()
-  const isNight = period === 'night'
+  const isNight = period === 'noche'
   const { x: sunX, y: sunY, hourFloat } = sunMoonPosition()
   const isSunTime = hourFloat >= 5 && hourFloat < 19
 
