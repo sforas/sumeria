@@ -1719,22 +1719,26 @@ export default function Home() {
             </div>
           ))}
           {dueContacts.map(contact => (
-            <div key={`due-${contact.id}`} style={{
-              display: 'flex', alignItems: 'center', gap: '12px',
-              padding: '12px 14px',
-              background: 'var(--surf)',
-              border: '0.5px solid var(--border)',
-              borderLeft: '2px solid #B5724A',
-              borderRadius: '0 8px 8px 0',
-              marginBottom: '6px',
-              cursor: contact.phone ? 'pointer' : 'default'
-            }} onClick={() => {
-              if (contact.phone) {
-                const phone = contact.phone.replace(/\D/g, '')
-                window.open(`https://wa.me/${phone}`, '_blank')
-                setContactToConfirm(contact)
-              }
-            }}>
+            <a
+              key={`due-${contact.id}`}
+              href={contact.phone ? `https://wa.me/${contact.phone.replace(/\D/g, '')}` : undefined}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => {
+                if (contact.phone) setContactToConfirm(contact)
+              }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '12px',
+                padding: '12px 14px',
+                background: 'var(--surf)',
+                border: '0.5px solid var(--border)',
+                borderLeft: '2px solid #B5724A',
+                borderRadius: '0 8px 8px 0',
+                marginBottom: '6px',
+                cursor: contact.phone ? 'pointer' : 'default',
+                textDecoration: 'none'
+              }}
+            >
               <div style={{ width: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#B5724A' }}>
                 <SocialSymbol size={18} />
               </div>
@@ -1751,7 +1755,7 @@ export default function Home() {
                   WhatsApp →
                 </div>
               )}
-            </div>
+            </a>
           ))}
           {todayCalendarEvents.length > 0 && todayCalendarEvents.map(ev => (
             <div key={ev.id} style={{
@@ -1862,7 +1866,7 @@ export default function Home() {
 
       {renderModal()}
 
-      {contactToConfirm && (
+      {contactToConfirm && typeof contactToConfirm.name === 'string' && (
         <div style={{
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
           zIndex: 300, display: 'flex', alignItems: 'center',
