@@ -3,7 +3,6 @@ import { supabase } from '../lib/supabase'
 import { Notifs } from '../lib/notifications'
 import { FitnessSymbol, WorkSymbol, ReadingSymbol, LearningSymbol, SocialSymbol, HealthSymbol, SavingsSymbol } from '../components/icons/DistrictSymbols'
 import { getWorkoutIcon } from '../components/icons/getWorkoutIcon'
-import { useAtmosphere } from '../lib/useAtmosphere'
 import { addPoints, getStageAndProgress, STAGE_THRESHOLDS, STAGE_NAMES } from '../lib/districtPoints'
 import { COLORS as DISTRICT_COLORS } from '../lib/buildingRenders'
 import Skyline from '../components/Skyline'
@@ -71,8 +70,6 @@ function formatElapsed(ms) {
 }
 
 export default function Home() {
-  useAtmosphere()
-
   const [districtPoints, setDistrictPoints] = useState({})
   const [stageUp, setStageUp] = useState(null)
   const [selectedDistrict, setSelectedDistrict] = useState(null)

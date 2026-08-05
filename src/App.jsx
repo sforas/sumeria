@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import './index.css'
 import { Notifs } from './lib/notifications'
+import { useAtmosphere } from './lib/useAtmosphere'
 import Topbar from './components/Topbar'
 import Menu from './components/Menu'
 import Home from './pages/Home'
@@ -19,6 +20,8 @@ import MonthlyReview from './pages/MonthlyReview'
 import YearlyReview from './pages/YearlyReview'
 
 export default function App() {
+  useAtmosphere()
+
   const [activeTab, setActiveTab] = useState('home')
   const [menuOpen, setMenuOpen] = useState(false)
   const [showWeeklyReview, setShowWeeklyReview] = useState(false)
