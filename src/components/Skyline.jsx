@@ -22,8 +22,8 @@ const SUN_DURATION = SUN_END_HOUR - SUN_START_HOUR // 16 hours
 function getSunPosition(hourFloat) {
   const t = Math.max(0, Math.min(1, (hourFloat - SUN_START_HOUR) / SUN_DURATION))
   const x = 10 + t * 300
-  // Arc: lowest at edges (y=35), highest at center (y=6)
-  const y = 35 - 29 * Math.sin(Math.PI * t)
+  // Parabolic arc: near horizon at edges (y=120), high in sky at peak (y=10)
+  const y = 120 - 110 * Math.sin(Math.PI * t)
   return { x, y }
 }
 
@@ -34,7 +34,7 @@ function getMoonPosition(hourFloat) {
   const h = hourFloat >= 21 ? hourFloat : hourFloat + 24
   const t = Math.max(0, Math.min(1, (h - MOON_START_HOUR) / MOON_DURATION))
   const x = 10 + t * 300
-  const y = 25 - 17 * Math.sin(Math.PI * t)
+  const y = 120 - 110 * Math.sin(Math.PI * t)
   return { x, y }
 }
 
