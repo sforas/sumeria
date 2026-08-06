@@ -22,8 +22,8 @@ const SUN_DURATION = SUN_END_HOUR - SUN_START_HOUR // 16 hours
 function getSunPosition(hourFloat) {
   const t = Math.max(0, Math.min(1, (hourFloat - SUN_START_HOUR) / SUN_DURATION))
   const x = 10 + t * 300
-  // Arc: lowest at edges (y=25), highest at center (y=8)
-  const y = 25 - 17 * Math.sin(Math.PI * t)
+  // Arc: lowest at edges (y=35), highest at center (y=6)
+  const y = 35 - 29 * Math.sin(Math.PI * t)
   return { x, y }
 }
 
