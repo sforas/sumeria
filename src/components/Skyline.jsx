@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { getPeriod } from '../lib/useAtmosphere'
 import { getStageAndProgress } from '../lib/districtPoints'
 import { DISTRICT_ORDER, COLORS, getBuildingSize, getBuildingRender } from '../lib/buildingRenders'
@@ -12,23 +13,55 @@ const DISTRICT_SYMBOLS = {
 }
 
 const SECTION_WIDTH = 320 / 8 // 40px per section
-
-function sunMoonPosition() {
-  const now = new Date()
-  const hourFloat = now.getHours() + now.getMinutes() / 60
-  const t = Math.max(0, Math.min(1, (hourFloat - 5) / 16))
-  const x = 10 + t * (310 - 10)
-  const y = 20 - 48 * t * (1 - t)
-  return { x, y, hourFloat }
-}
-
 const GROUND_Y = 128
 
+const SUN_START_HOUR = 5
+const SUN_END_HOUR = 21
+const SUN_DURATION = SUN_END_HOUR - SUN_START_HOUR // 16 hours
+
+function getSunPosition(hourFloat) {
+  const t = Math.max(0, Math.min(1, (hourFloat - SUN_START_HOUR) / SUN_DURATION))
+  const x = 10 + t * 300
+  // Arc: lowest at edges (y=25), highest at center (y=8)
+  const y = 25 - 17 * Math.sin(Math.PI * t)
+  return { x, y }
+}
+
+const MOON_START_HOUR = 21
+const MOON_DURATION = 8 // 21:00 to 5:00
+
+function getMoonPosition(hourFloat) {
+  const h = hourFloat >= 21 ? hourFloat : hourFloat + 24
+  const t = Math.max(0, Math.min(1, (h - MOON_START_HOUR) / MOON_DURATION))
+  const x = 10 + t * 300
+  const y = 25 - 17 * Math.sin(Math.PI * t)
+  return { x, y }
+}
+
+const SUN_OPACITY = { amanecer: 0.7, manana: 1, dia: 1, tarde: 0.9, atardecer: 0.7 }
+const MOON_OPACITY = { amanecer: 0.4, atardecer: 0.5, noche: 1 }
+
 export default function Skyline({ points = {}, onBuildingClick }) {
-  const period = getPeriod()
-  const isNight = period === 'noche'
-  const { x: sunX, y: sunY, hourFloat } = sunMoonPosition()
-  const isSunTime = hourFloat >= 5 && hourFloat < 19
+  const [hourFloat, setHourFloat] = useState(() => {
+    const now = new Date()
+    return now.getHours() + now.getMinutes() / 60
+  })
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      const now = new Date()
+      setHourFloat(now.getHours() + now.getMinutes() / 60)
+    }, 60000)
+    return () => clearInterval(id)
+  }, [])
+
+  const period = getPeriod(Math.floor(hourFloat))
+  const sunOpacity = SUN_OPACITY[period]
+  const moonOpacity = MOON_OPACITY[period]
+  const showSun = sunOpacity != null
+  const showMoon = moonOpacity != null
+  const sunPos = getSunPosition(hourFloat)
+  const moonPos = getMoonPosition(hourFloat)
 
   return (
     <svg width="100%" viewBox="0 0 320 140" xmlns="http://www.w3.org/2000/svg">
@@ -42,21 +75,32 @@ export default function Skyline({ points = {}, onBuildingClick }) {
       {/* Sky */}
       <rect x="0" y="0" width="320" height={GROUND_Y} fill="url(#skylineSkyGradient2)" />
 
-      {/* Sun / Moon */}
-      {isSunTime ? (
-        <circle cx={sunX} cy={sunY} r="8" fill="var(--acc)" />
-      ) : (
-        <path
-          d={`M ${sunX + 3} ${sunY - 6} A 7 7 0 1 0 ${sunX + 3} ${sunY + 6} A 5 5 0 1 1 ${sunX + 3} ${sunY - 6} Z`}
-          fill="none" stroke="var(--muted)" strokeWidth="1"
-        />
+      {/* Sun */}
+      {showSun && (
+        <g opacity={sunOpacity}>
+          <circle cx={sunPos.x} cy={sunPos.y} r={16}
+            fill={period === 'amanecer' || period === 'atardecer' ? '#F0802010' : '#D4A84315'} />
+          <circle cx={sunPos.x} cy={sunPos.y} r={9}
+            fill={period === 'amanecer' ? '#F08020' :
+                  period === 'atardecer' ? '#E06030' : '#D4A843'} />
+        </g>
       )}
-      {isNight && (
-        <>
-          <circle cx={sunX - 20} cy={sunY + 8} r="0.7" fill="var(--muted)" opacity="0.6" />
-          <circle cx={sunX + 22} cy={sunY - 4} r="0.6" fill="var(--muted)" opacity="0.5" />
-          <circle cx={sunX - 10} cy={sunY - 14} r="0.5" fill="var(--muted)" opacity="0.5" />
-        </>
+
+      {/* Moon */}
+      {showMoon && (
+        <g opacity={moonOpacity}>
+          {/* Crescent — full ring minus an offset circle cut using the current sky bg */}
+          <circle cx={moonPos.x} cy={moonPos.y} r={8}
+            fill="none" stroke="#C8D8F0" strokeWidth={1.2} />
+          <circle cx={moonPos.x + 4} cy={moonPos.y} r={7} fill="var(--bg)" />
+          {period === 'noche' && (
+            <>
+              <circle cx={moonPos.x + 20} cy={moonPos.y - 8} r={1} fill="#C8D8F0" opacity={0.6} />
+              <circle cx={moonPos.x - 18} cy={moonPos.y + 6} r={0.8} fill="#C8D8F0" opacity={0.5} />
+              <circle cx={moonPos.x + 12} cy={moonPos.y + 12} r={0.8} fill="#C8D8F0" opacity={0.4} />
+            </>
+          )}
+        </g>
       )}
 
       {/* Ground */}

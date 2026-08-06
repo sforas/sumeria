@@ -34,10 +34,10 @@ const PALETTES = {
 }
 
 export function getPeriod(hour = new Date().getHours()) {
-  if (hour >= 5 && hour < 7) return 'amanecer'
-  if (hour >= 7 && hour < 12) return 'manana'
-  if (hour >= 12 && hour < 16) return 'dia'
-  if (hour >= 16 && hour < 19) return 'tarde'
+  if (hour >= 5 && hour < 8) return 'amanecer'
+  if (hour >= 8 && hour < 12) return 'manana'
+  if (hour >= 12 && hour < 17) return 'dia'
+  if (hour >= 17 && hour < 19) return 'tarde'
   if (hour >= 19 && hour < 21) return 'atardecer'
   return 'noche'
 }
